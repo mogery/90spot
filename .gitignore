@@ -1,0 +1,8 @@
+# System-dependant VSCode config
+.vscode
+
+# Build files
+*.elf
+*.nacp
+*.nro
+build
