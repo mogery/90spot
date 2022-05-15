@@ -33,6 +33,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define Byte(x,i) ((UCHAR)(((x) >> (8*i)) & 0xFF))
 
+#define IS_LITTLE_ENDIAN
+
 /* define IS_LITTLE_ENDIAN for faster operation when appropriate */
 #ifdef IS_LITTLE_ENDIAN
 /* Useful macros -- little endian words on a little endian machine */
@@ -623,4 +625,20 @@ shn_finish(shn_ctx *c, UCHAR *buf, int nbytes)
 	    break;
 	}
     }
+}
+
+/*
+ * NOTE: The following code has been added by spottie contributors,
+ * and it is not part of the original Spottie reference implementation.
+ */
+
+void shn_nonce_u32(shn_ctx *c, uint32_t nonce)
+{
+    uint8_t n[4];
+    n[0] = nonce >> 24;
+    n[1] = nonce >> 16;
+    n[2] = nonce >>  8;
+    n[3] = nonce;
+    
+    return shn_nonce(c, n, 4);
 }
