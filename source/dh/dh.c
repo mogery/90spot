@@ -7,6 +7,7 @@
 #include <switch/kernel/random.h>
 #include "mini-gmp.h"
 #include "Shannon.h"
+#include "log.h"
 
 mpz_t dh_prime, dh_generator;
 
@@ -14,13 +15,13 @@ void dh_init() {
     // TODO: SEED RANDOM FOR DH
 
     if (!envHasRandomSeed()) {
-        printf("[DH] WARNING! Your random seed is not set. This will mean that you will use the same auth keys over and over again. Do not share traffic captures of Spottie with anyone!");
+        log("[DH] WARNING! Your random seed is not set. This will mean that you will use the same auth keys over and over again. Do not share traffic captures of Spottie with anyone!");
     }
 
     mpz_init_set_ui(dh_generator, DH_GENERATOR);
     mpz_init_set_str(dh_prime, DH_PRIME, 16);
 
-    printf("[DH] Initialized!\n");
+    log("[DH] Initialized!\n");
 }
 
 dh_keys dh_keygen()
