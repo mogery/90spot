@@ -6,3 +6,6 @@
 *.nacp
 *.nro
 build
+
+# TEMPORARY secret header for auth storage
+include/secrets.h

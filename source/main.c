@@ -5,7 +5,11 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
 
+#include <switch/services/set.h>
 #include <switch.h>
 #include "apresolve.h"
 #include "protobuf-c.h"
@@ -13,6 +17,7 @@
 #include "handshake.h"
 #include "session.h"
 #include "log.h"
+#include "secrets.h"
 
 void cleanup(session_ctx* session)
 {
@@ -22,6 +27,7 @@ void cleanup(session_ctx* session)
     }
 
     socketExit();
+    setsysExit();
     consoleExit(NULL);
 }
 
@@ -57,6 +63,15 @@ void NORETURN panic(session_ctx* session)
     __libnx_exit(0);
 }
 
+void authentication_handler(session_ctx* session, bool success)
+{
+    consoleUpdate(NULL);
+    if (!success)
+    {
+        panic(session);
+    }
+}
+
 int main(int argc, char* argv[])
 {
     session_ctx* session = NULL;
@@ -64,6 +79,7 @@ int main(int argc, char* argv[])
     appletLockExit();
 
     consoleInit(NULL);
+    setsysInitialize();
 
     time_t unixTime = time(NULL);
 
@@ -98,10 +114,34 @@ int main(int argc, char* argv[])
     
     dh_init();
     dh_keys keys = dh_keygen();
+    consoleUpdate(NULL);
 
     struct sockaddr_in* ap = apresolve();
+    if (ap == NULL)
+    {
+        panic(session);
+    }
+    consoleUpdate(NULL);
 
-    spotify_handshake(ap, keys);
+    hs_res* handshake = spotify_handshake(ap, keys);
+    if (handshake == NULL)
+    {
+        panic(session);
+    }
+    consoleUpdate(NULL);
+
+    session = session_init(handshake);
+    if (session == NULL)
+    {
+        panic(session);
+    }
+    consoleUpdate(NULL);
+
+    if (session_authenticate(session, SPOTIFY_USERNAME, SPOTIFY_PASSWORD, authentication_handler) < 0)
+    {
+        panic(session);
+    }
+    consoleUpdate(NULL);
 
     // Main loop
     while (appletMainLoop())
@@ -115,6 +155,11 @@ int main(int argc, char* argv[])
 
         if (kDown & HidNpadButton_Plus)
             break; // break in order to return to hbmenu
+
+        if (session_update(session) < 0)
+        {
+            panic(session);
+        }
 
         consoleUpdate(NULL);
     }
