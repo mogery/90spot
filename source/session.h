@@ -71,6 +71,7 @@ struct session_message_listener_entry {
 
 session_ctx* session_init(hs_res* handshake);
 int session_update(session_ctx* ctx);
+int session_send_message(session_ctx* ctx, uint8_t cmd, uint8_t* buf, uint16_t len);
 void session_add_message_listener(session_ctx* ctx, session_message_listener func, void* state);
 void session_remove_message_listener(session_ctx* ctx, session_message_listener func);
 int session_authenticate(session_ctx* ctx, char* username, char* password, void (*result)(session_ctx* ctx, bool success));
