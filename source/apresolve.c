@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
+#include "version.h"
 #include "apresolve.h"
 #include "cJSON.h"
 #include "log.h"
@@ -72,7 +73,7 @@ struct sockaddr_in* apresolve()
         goto cleanup;
     }
 
-    char* request_message = "GET / HTTP/1.1\r\nHost: apresolve.spotify.com\r\nConnection: close\r\nUser-Agent: spottie/1.0\r\nAccept: application/json\r\n\r\n";
+    char* request_message = "GET / HTTP/1.1\r\nHost: apresolve.spotify.com\r\nConnection: close\r\nUser-Agent: " SPOTTIE_UA "\r\nAccept: application/json\r\n\r\n";
 
     if (send(socket_desc, request_message, strlen(request_message), 0) < 0)
     {
