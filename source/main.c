@@ -18,9 +18,18 @@
 #include "session.h"
 #include "log.h"
 #include "secrets.h"
+#include "mercury.h"
 
-void cleanup(session_ctx* session)
+session_ctx* session = NULL;
+mercury_ctx* mercury = NULL;
+
+void cleanup()
 {
+    if (mercury != NULL)
+    {
+        mercury_destroy(mercury);
+    }
+
     if (session != NULL)
     {
         session_destroy(session);
@@ -31,7 +40,7 @@ void cleanup(session_ctx* session)
     consoleExit(NULL);
 }
 
-void NORETURN panic(session_ctx* session)
+void NORETURN panic()
 {
     log("\n\n[!] panic() called: press + button to exit gracefully\n");
     consoleUpdate(NULL);
@@ -50,11 +59,9 @@ void NORETURN panic(session_ctx* session)
 
         if (kDown & HidNpadButton_Plus)
             break; // break in order to return to hbmenu
-
-        consoleUpdate(NULL);
     }
 
-    cleanup(NULL);
+    cleanup();
 
     appletUnlockExit();
 
@@ -65,17 +72,24 @@ void NORETURN panic(session_ctx* session)
 
 void authentication_handler(session_ctx* session, bool success)
 {
-    consoleUpdate(NULL);
     if (!success)
     {
-        panic(session);
+        panic();
     }
+
+    // Initialize Mercury
+    mercury = mercury_init(session);
+    if (mercury == NULL)
+    {
+        panic();
+    }
+    consoleUpdate(NULL);
+
+    
 }
 
 int main(int argc, char* argv[])
 {
-    session_ctx* session = NULL;
-
     appletLockExit();
 
     consoleInit(NULL);
@@ -116,32 +130,38 @@ int main(int argc, char* argv[])
     dh_keys keys = dh_keygen();
     consoleUpdate(NULL);
 
+    // Resolve a Spotify Access Point
     struct sockaddr_in* ap = apresolve();
     if (ap == NULL)
     {
-        panic(session);
+        panic();
     }
     consoleUpdate(NULL);
 
+    // Handshake with AP
     hs_res* handshake = spotify_handshake(ap, keys);
     if (handshake == NULL)
     {
-        panic(session);
+        panic();
     }
     consoleUpdate(NULL);
 
+    // Initialize session from handshake data & socket
     session = session_init(handshake);
     if (session == NULL)
     {
-        panic(session);
+        panic();
     }
     consoleUpdate(NULL);
 
+    // Authenticate session
     if (session_authenticate(session, SPOTIFY_USERNAME, SPOTIFY_PASSWORD, authentication_handler) < 0)
     {
-        panic(session);
+        panic();
     }
     consoleUpdate(NULL);
+
+    bool sent = false;
 
     // Main loop
     while (appletMainLoop())
@@ -156,15 +176,30 @@ int main(int argc, char* argv[])
         if (kDown & HidNpadButton_Plus)
             break; // break in order to return to hbmenu
 
+        if (kDown & HidNpadButton_A && !sent)
+        {
+            sent = true;
+            log("Sending mercury GET\n");
+            consoleUpdate(NULL);
+            if (mercury_get_request(mercury, "hm://metadata/3/track/a7447d8aef4e4a2f94c074d833c37265") < 0)
+            {
+                panic();
+            }
+            consoleUpdate(NULL);
+        }
+
+        if (!(kDown & HidNpadButton_A) && sent)
+            sent = false;
+
         if (session_update(session) < 0)
         {
-            panic(session);
+            panic();
         }
 
         consoleUpdate(NULL);
     }
 
-    cleanup(session);
+    cleanup();
     appletUnlockExit();
     return 0;
 }
