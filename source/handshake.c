@@ -91,7 +91,7 @@ int client_hello(uint8_t** accumulator, size_t* acc_size, int socket_desc, uint8
 
     if (send(socket_desc, packet, packet_size, 0) < 0)
     {
-        log("[HANDSHAKE] Failed to send ClientHello :(\n");
+        log_error("[HANDSHAKE] Failed to send ClientHello :(\n");
         goto cleanup;
     }
 
@@ -118,18 +118,18 @@ uint8_t* recv_generic_packet(uint32_t* size, int socket_desc)
     uint8_t header[4];
     if (recv(socket_desc, header, 4, 0) < 0)
     {
-        log("[HANDSHAKE] Failed to read packet header\n");
+        log_error("[HANDSHAKE] Failed to read packet header\n");
         goto cleanup;
     }
 
     *size = (((uint32_t)header[0] << 24) | ((uint32_t)header[1] << 16) | ((uint32_t)header[2] << 8) | (uint32_t)header[3]);
 
-    log("[HANDSHAKE] Received packet of length %d\n", *size);
+    log_debug("[HANDSHAKE] Received packet of length %d\n", *size);
 
     packet = malloc(*size);
     if (packet == NULL)
     {
-        log("[HANDSHAKE] Failed to allocate buffer for packet content\n");
+        log_error("[HANDSHAKE] Failed to allocate buffer for packet content\n");
         goto cleanup;
     }
 
@@ -137,7 +137,7 @@ uint8_t* recv_generic_packet(uint32_t* size, int socket_desc)
 
     if (recv(socket_desc, packet + 4, *size - 4, 0) < 0)
     {
-        log("[HANDSHAKE] Failed to read packet content\n");
+        log_error("[HANDSHAKE] Failed to read packet content\n");
         goto cleanup;
     }
 
@@ -169,7 +169,7 @@ APResponseMessage* recv_ap_response(uint8_t** accumulator, size_t* acc_size, int
     message = apresponse_message__unpack(NULL, packet_size - 4, packet + 4);
     if (message == NULL)
     {
-        log("[HANDSHAKE] Failed to parse APResponse :(\n");
+        log_error("[HANDSHAKE] Failed to parse APResponse :(\n");
         goto cleanup;
     }
 
@@ -220,7 +220,7 @@ int client_response(int socket_desc, uint8_t* challenge)
 
     if (send(socket_desc, packet, packet_size, 0) < 0)
     {
-        log("[HANDSHAKE] Failed to send ClientHello :(\n");
+        log_error("[HANDSHAKE] Failed to send ClientHello :(\n");
         goto cleanup;
     }
 
@@ -248,7 +248,7 @@ hs_res* spotify_handshake(struct sockaddr_in *ap, dh_keys keys)
 
     if (ap == NULL)
     {
-        log("[HANDSHAKE] AP is nullptr :(\n");
+        log_error("[HANDSHAKE] AP is nullptr :(\n");
         goto cleanup;
     }
 
@@ -257,27 +257,27 @@ hs_res* spotify_handshake(struct sockaddr_in *ap, dh_keys keys)
     socket_desc = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_desc == -1)
     {
-        log("[HANDSHAKE] Could not create socket :(\n");
+        log_error("[HANDSHAKE] Could not create socket :(\n");
         goto cleanup;
     }
 
     if (connect(socket_desc, (struct sockaddr *)ap, sizeof(struct sockaddr_in)) < 0)
     {
-        log("[HANDSHAKE] Connection error :(\n");
+        log_error("[HANDSHAKE] Connection error :(\n");
         goto cleanup;
     }
 
     // Send hello message (+ write message to packet accumulator)
-    log("[HANDSHAKE] Saying hello...\n");
+    log_debug("[HANDSHAKE] Saying hello...\n");
     if (client_hello(&accumulator, &acc_size, socket_desc, public_key_bytes) == -1)
     {
-        log("[HANDSHAKE] client_hello failed :(\n");
+        log_error("[HANDSHAKE] client_hello failed :(\n");
         goto cleanup;
     }
 
     // Receive response message (+ write message to packet accumulator)
     APResponseMessage* ap_response = recv_ap_response(&accumulator, &acc_size, socket_desc);
-    log("[HANDSHAKE] Received APResponseMessage!\n");
+    log_debug("[HANDSHAKE] Received APResponseMessage!\n");
 
     // Extract remote key from APResponseMessage
     mpz_t remote_key;
@@ -313,10 +313,10 @@ hs_res* spotify_handshake(struct sockaddr_in *ap, dh_keys keys)
     shn_key(&encode_cipher, mac_buf + 20, 32);
     shn_key(&decode_cipher, mac_buf + 20 + 32, 32);
 
-    log("[HANDSHAKE] Sending response...\n");
+    log_debug("[HANDSHAKE] Sending response...\n");
     if (client_response(socket_desc, challenge) == -1)
     {
-        log("[HANDSHAKE] client_response failed :(\n");
+        log_error("[HANDSHAKE] client_response failed :(\n");
         goto cleanup;
     }
 

@@ -74,7 +74,7 @@ int main(int argc, char* argv[])
     int logfd = open(logfile_name, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (logfd == -1)
     {
-        log("[LOG] WARNING: Failed to open '%s'! Not logging to file.\n", logfile_name);
+        log_warn("[LOG] WARNING: Failed to open '%s'! Not logging to file.\n", logfile_name);
     }
     else
     {
@@ -93,7 +93,7 @@ int main(int argc, char* argv[])
     struct tm* timeStruct = localtime((const time_t *)&unixTime);
     log("%i. %02i. %02i. %02i:%02i:%02i\n\n", timeStruct->tm_year + 1900, timeStruct->tm_mon + 1, timeStruct->tm_mday, timeStruct->tm_hour, timeStruct->tm_min, timeStruct->tm_sec);
 
-    log("[PROTOBUF] Version: %s\n", protobuf_c_version());
+    log_debug("[PROTOBUF] Version: %s\n", protobuf_c_version());
     consoleUpdate(NULL);
     
     dh_init();
@@ -119,7 +119,7 @@ int main(int argc, char* argv[])
         consoleUpdate(NULL);
     }
 
-    socketExit();
-    consoleExit(NULL);
+    cleanup(session);
+    appletUnlockExit();
     return 0;
 }
