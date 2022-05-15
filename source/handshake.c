@@ -4,13 +4,15 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <sys/ioctl.h>
+#include <sys/filio.h>
+#include <sys/socket.h>
 #include <arpa/inet.h>
+#include <switch/crypto/hmac.h>
 #include <switch/kernel/random.h>
 #include "mini-gmp.h"
 #include "Shannon.h"
-#include "hmac.h"
+#include "log.h"
 
 #include "proto/keyexchange.pb-c.h"
 
@@ -89,7 +91,7 @@ int client_hello(uint8_t** accumulator, size_t* acc_size, int socket_desc, uint8
 
     if (send(socket_desc, packet, packet_size, 0) < 0)
     {
-        printf("[HANDSHAKE] Failed to send ClientHello :(\n");
+        log("[HANDSHAKE] Failed to send ClientHello :(\n");
         goto cleanup;
     }
 
@@ -116,18 +118,18 @@ uint8_t* recv_generic_packet(uint32_t* size, int socket_desc)
     uint8_t header[4];
     if (recv(socket_desc, header, 4, 0) < 0)
     {
-        printf("[HANDSHAKE] Failed to read packet header\n");
+        log("[HANDSHAKE] Failed to read packet header\n");
         goto cleanup;
     }
 
     *size = (((uint32_t)header[0] << 24) | ((uint32_t)header[1] << 16) | ((uint32_t)header[2] << 8) | (uint32_t)header[3]);
 
-    printf("[HANDSHAKE] Received packet of length %d\n", *size);
+    log("[HANDSHAKE] Received packet of length %d\n", *size);
 
     packet = malloc(*size);
     if (packet == NULL)
     {
-        printf("[HANDSHAKE] Failed to allocate buffer for packet content\n");
+        log("[HANDSHAKE] Failed to allocate buffer for packet content\n");
         goto cleanup;
     }
 
@@ -135,9 +137,16 @@ uint8_t* recv_generic_packet(uint32_t* size, int socket_desc)
 
     if (recv(socket_desc, packet + 4, *size - 4, 0) < 0)
     {
-        printf("[HANDSHAKE] Failed to read packet content\n");
+        log("[HANDSHAKE] Failed to read packet content\n");
         goto cleanup;
     }
+
+    // log("recv packet:\n");
+    // for (int i = 0; i < *size; i++)
+    // {
+    //     log("%02x", packet[i]);
+    // }
+    // log("\n");
 
 cleanup:
     return packet;
@@ -155,11 +164,12 @@ APResponseMessage* recv_ap_response(uint8_t** accumulator, size_t* acc_size, int
     }
 
     *accumulator = add_to_accumulator(*accumulator, *acc_size, packet, packet_size);
+    *acc_size = *acc_size + packet_size;
 
     message = apresponse_message__unpack(NULL, packet_size - 4, packet + 4);
     if (message == NULL)
     {
-        printf("[HANDSHAKE] Failed to parse APResponse :(\n");
+        log("[HANDSHAKE] Failed to parse APResponse :(\n");
         goto cleanup;
     }
 
@@ -172,6 +182,63 @@ cleanup:
     return message;
 }
 
+int client_response(int socket_desc, uint8_t* challenge)
+{
+    bool success = false;
+
+    LoginCryptoDiffieHellmanResponse dh_res;
+    login_crypto_diffie_hellman_response__init(&dh_res);
+    dh_res.hmac.data = challenge;
+    dh_res.hmac.len = 20; // HMAC_SHA1 has a fixed length of 20
+
+    LoginCryptoResponseUnion login_res;
+    login_crypto_response_union__init(&login_res);
+    login_res.diffie_hellman = &dh_res;
+
+    PoWResponseUnion pow_res;
+    po_wresponse_union__init(&pow_res);
+
+    CryptoResponseUnion crypto_res;
+    crypto_response_union__init(&crypto_res);
+
+    ClientResponsePlaintext message;
+    client_response_plaintext__init(&message);
+    message.login_crypto_response = &login_res;
+    message.pow_response = &pow_res;
+    message.crypto_response = &crypto_res;
+
+    uint32_t packet_size = 4 + client_response_plaintext__get_packed_size(&message);
+    uint8_t* packet = malloc(packet_size);
+
+    // Write message size as a big endian uint32_t
+    packet[0] = packet_size >> 24;
+    packet[1] = packet_size >> 16;
+    packet[2] = packet_size >>  8;
+    packet[3] = packet_size;
+
+    client_response_plaintext__pack(&message, packet + 4);
+
+    if (send(socket_desc, packet, packet_size, 0) < 0)
+    {
+        log("[HANDSHAKE] Failed to send ClientHello :(\n");
+        goto cleanup;
+    }
+
+    success = true;
+
+    cleanup:
+    free(packet);
+
+    if (success)
+    {
+        return 0;
+    }
+    else
+    {
+        return -1;
+    }
+}
+
 hs_res* spotify_handshake(struct sockaddr_in *ap, dh_keys keys)
 {
     hs_res* res = NULL;
@@ -181,7 +248,7 @@ hs_res* spotify_handshake(struct sockaddr_in *ap, dh_keys keys)
 
     if (ap == NULL)
     {
-        printf("[HANDSHAKE] AP is nullptr :(\n");
+        log("[HANDSHAKE] AP is nullptr :(\n");
         goto cleanup;
     }
 
@@ -190,79 +257,82 @@ hs_res* spotify_handshake(struct sockaddr_in *ap, dh_keys keys)
     socket_desc = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_desc == -1)
     {
-        printf("[HANDSHAKE] Could not create socket :(\n");
+        log("[HANDSHAKE] Could not create socket :(\n");
         goto cleanup;
     }
 
     if (connect(socket_desc, (struct sockaddr *)ap, sizeof(struct sockaddr_in)) < 0)
     {
-        printf("[HANDSHAKE] Connection error :(\n");
+        log("[HANDSHAKE] Connection error :(\n");
         goto cleanup;
     }
 
-    printf("[HANDSHAKE] Saying hello...\n");
+    // Send hello message (+ write message to packet accumulator)
+    log("[HANDSHAKE] Saying hello...\n");
     if (client_hello(&accumulator, &acc_size, socket_desc, public_key_bytes) == -1)
     {
-        printf("[HANDSHAKE] client_hello failed :(\n");
+        log("[HANDSHAKE] client_hello failed :(\n");
         goto cleanup;
     }
 
+    // Receive response message (+ write message to packet accumulator)
     APResponseMessage* ap_response = recv_ap_response(&accumulator, &acc_size, socket_desc);
+    log("[HANDSHAKE] Received APResponseMessage!\n");
 
-    printf("[HANDSHAKE] Received APResponse!\n");
-
+    // Extract remote key from APResponseMessage
+    mpz_t remote_key;
     size_t remote_key_length = ap_response->challenge->login_crypto_challenge->diffie_hellman->gs.len;
     uint8_t* remote_key_buf = ap_response->challenge->login_crypto_challenge->diffie_hellman->gs.data;
-
-    mpz_t remote_key;
     buf2mpz(&remote_key, remote_key_buf, remote_key_length);
 
-    printf("[HANDSHAKE] Remote key:\n");
-    mpz_out_str(stdout, 16, remote_key);
-    printf("\n");
-
+    // Derive shared DH key using local and remote keys
     mpz_t shared_key;
     dh_shared_key(&shared_key, remote_key, keys.private);
 
-    printf("[HANDSHAKE] Shared key:\n");
-    mpz_out_str(stdout, 16, shared_key);
-    printf("\n");
-    
     size_t shared_key_len = 0;
     uint8_t* shared_key_buf = mpz2buf(&shared_key_len, shared_key);
 
+    // Build weird MAC buffer thingy
     uint8_t mac_buf[100];
-    acc_size++;
-    accumulator = realloc(accumulator, acc_size);
+    accumulator = realloc(accumulator, acc_size + 1);
+    int mac_ptr = 0;
 
     for (int i = 1; i < 6; i++)
     {
-        accumulator[acc_size - 1] = i;
-        hmac_sha1(shared_key_buf, shared_key_len, accumulator, acc_size, mac_buf + ((i - 1) * 20));
+        accumulator[acc_size] = i; // Accumulated packet bytes with the index added to the end
+        hmacSha1CalculateMac(mac_buf + mac_ptr, shared_key_buf, shared_key_len, accumulator, acc_size + 1);
+        mac_ptr += 20;
     }
 
-    uint8_t challenge[20];
-    hmac_sha1(mac_buf, 20, accumulator, acc_size - 1, challenge);
+    // Derive challenge response
+    uint8_t challenge[20]; // HMAC_SHA1 has fixed length of 20
+    hmacSha1CalculateMac(challenge, mac_buf, 20, accumulator, acc_size);
 
-    printf("[HANDSHAKE] Challenge:\n");
-    for (int i = 0; i < 20; i++)
-    {
-        printf("%02x", challenge[i]);
-    }
-    printf("\n");
-
+    // Derive send & recieve keys, initialize Shannon ciphers
     shn_ctx encode_cipher, decode_cipher;
-
     shn_key(&encode_cipher, mac_buf + 20, 32);
     shn_key(&decode_cipher, mac_buf + 20 + 32, 32);
 
+    log("[HANDSHAKE] Sending response...\n");
+    if (client_response(socket_desc, challenge) == -1)
+    {
+        log("[HANDSHAKE] client_response failed :(\n");
+        goto cleanup;
+    }
+
+    // Pack 'em up into return struct
+    res = malloc(sizeof(hs_res));
+
     hs_ciphers ciphers;
     ciphers.decode_cipher = decode_cipher;
+    ciphers.decode_nonce = 0;
     ciphers.encode_cipher = encode_cipher;
+    ciphers.encode_nonce = 0;
 
-    res = malloc(sizeof(hs_res));
     res->ciphers = ciphers;
     res->socket_desc = socket_desc;
+
+    log("[HANDSHAKE] All done! :))))\n");
     
 cleanup:
     if (res == NULL)

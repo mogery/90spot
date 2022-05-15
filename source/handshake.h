@@ -8,7 +8,10 @@
 
 typedef struct {
     shn_ctx decode_cipher;
+    uint32_t decode_nonce;
+
     shn_ctx encode_cipher;
+    uint32_t encode_nonce;
 } hs_ciphers;
 
 typedef struct {
