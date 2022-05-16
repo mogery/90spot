@@ -8,7 +8,6 @@
 #include <switch/services/set.h>
 #include "handshake.h"
 #include "log.h"
-#include "version.h"
 #include "conv.h"
 
 #include "proto/authentication.pb-c.h"

@@ -7,7 +7,6 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-#include "version.h"
 #include "apresolve.h"
 #include "cJSON.h"
 #include "log.h"
