@@ -132,6 +132,18 @@ void spotify_id_to_b62(char* out, spotify_id id)
 #pragma endregion spotify_id
 
 #pragma region spotify_file_id
+spotify_file_id spotify_file_id_from_raw(uint8_t* buf)
+{
+    spotify_file_id id;
+
+    for (int i = 0; i < SPOTIFY_FILE_ID_RAW_LENGTH; i++)
+    {
+        id.id[i] = buf[i];
+    }
+
+    return id;
+}
+
 void spotify_file_id_to_b16(char* out, spotify_file_id id)
 {
     to_base16(out, id.id, SPOTIFY_FILE_ID_RAW_LENGTH);

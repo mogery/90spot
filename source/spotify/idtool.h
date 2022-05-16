@@ -7,9 +7,9 @@
 #define BASE16_DIGITS "0123456789abcdef"
 
 typedef enum {
-    Track,
-    Podcast,
-    NonPlayable
+    SAT_Track,
+    SAT_Podcast,
+    SAT_NonPlayable
 } spotify_audio_type;
 
 #define SPOTIFY_ID_RAW_LENGTH 16 // 128 / 8
@@ -35,6 +35,7 @@ typedef struct {
     uint8_t id[SPOTIFY_FILE_ID_RAW_LENGTH];
 } spotify_file_id;
 
+spotify_file_id spotify_file_id_from_raw(uint8_t* buf);
 void spotify_file_id_to_b16(char* out, spotify_file_id id);
 
 #endif
