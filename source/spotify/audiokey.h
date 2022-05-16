@@ -34,6 +34,7 @@ typedef struct audiokey_ctx audiokey_ctx;
 typedef struct audiokey_pending_request audiokey_pending_request;
 
 audiokey_ctx* audiokey_init(session_ctx* session);
+int audiokey_request(audiokey_ctx* ctx, spotify_id track, spotify_file_id file, audiokey_response_handler handler, void* state);
 void audiokey_destroy(audiokey_ctx* ctx);
 
 #endif
