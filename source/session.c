@@ -306,7 +306,7 @@ int session_send_client_response_encryped(session_ctx* ctx, char* username, char
     system_info__init(&sysinfo);
     sysinfo.cpu_family = CPU_FAMILY__CPU_ARM;
     sysinfo.os = OS__OS_UNKNOWN; // no option for HOS :D
-    sysinfo.system_information_string = SPOTTIE_UA;
+    sysinfo.system_information_string = SPOTTIE_VERSION;
     sysinfo.device_id = device_id;
 
     ClientResponseEncrypted message;
