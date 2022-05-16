@@ -11,16 +11,18 @@
 
 #include <switch/services/set.h>
 #include <switch.h>
-#include "spotify/apresolve.h"
 #include "protobuf-c.h"
 #include "dh.h"
-#include "spotify/handshake.h"
-#include "spotify/session.h"
 #include "log.h"
 #include "secrets.h"
+#include "spotify/apresolve.h"
+#include "spotify/handshake.h"
+#include "spotify/session.h"
 #include "spotify/mercury.h"
+#include "spotify/idtool.h"
 
 #include "spotify/proto/metadata.pb-c.h"
+
 
 session_ctx* session = NULL;
 mercury_ctx* mercury = NULL;
@@ -124,6 +126,20 @@ int test_mercury_request_handler(mercury_ctx* mercury, Header* header, mercury_m
     log("%s - %s\n", track->artist[0]->name, track->name);
     consoleUpdate(NULL);
 
+    for (int i = 0; i < track->n_file; i++)
+    {
+        AudioFile* file = track->file[i];
+
+        char file_id[SPOTIFY_FILE_ID_B16_LENGTH] = "<no id>";
+        if (file->has_file_id)
+        {
+            spotify_file_id sfid = spotify_file_id_from_raw(file->file_id.data);
+            spotify_file_id_to_b16(file_id, sfid);
+        }
+
+        printf("(%d) File %s: format = %d\n", i, file_id, file->format);
+    }
+
     return 0;
 }
 
@@ -221,7 +237,15 @@ int main(int argc, char* argv[])
             sent = true;
             log("Sending mercury GET\n");
             consoleUpdate(NULL);
-            if (mercury_get_request(mercury, "hm://metadata/3/track/a7447d8aef4e4a2f94c074d833c37265", test_mercury_request_handler, NULL) < 0)
+
+            spotify_id track_id = spotify_id_from_b62("2V6BCyyQ7kSXhkXwAb13OR", SAT_Track);
+            char track_id_b16[SPOTIFY_ID_B16_LENGTH + 1];
+            spotify_id_to_b16(track_id_b16, track_id);
+
+            char* mercury_url = malloc(strlen("hm://metadata/3/track/") + SPOTIFY_ID_B16_LENGTH + 1);
+            sprintf(mercury_url, "hm://metadata/3/track/%s", track_id_b16);
+
+            if (mercury_get_request(mercury, mercury_url, test_mercury_request_handler, NULL) < 0)
             {
                 panic();
             }
