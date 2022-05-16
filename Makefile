@@ -37,7 +37,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 #   of a homebrew executable (.nro). This is intended to be used for sysmodules.
 #   NACP building is skipped as well.
 #---------------------------------------------------------------------------------
-TARGET		:=	$(notdir $(CURDIR))
+TARGET		:=	switchspot
 BUILD		:=	build
 SOURCES		:=	source source/proto source/protobuf-c source/cJSON source/shannon source/dh source/mini-gmp source/spotify source/spotify/proto source/conv
 DATA		:=	data
