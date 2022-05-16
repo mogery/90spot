@@ -107,7 +107,7 @@ int test_mercury_request_handler(mercury_ctx* mercury, Header* header, mercury_m
         return -1;
     }
 
-    log("1st part: #%p, len %ld\n", parts->buf, parts->len);
+    log("1st part: #%p, len %d\n", parts->buf, parts->len);
     consoleUpdate(NULL);
 
     Track* track = track__unpack(NULL, parts->len, parts->buf);
