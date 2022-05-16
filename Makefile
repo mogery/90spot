@@ -39,7 +39,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	source source/proto source/protobuf-c source/cJSON source/shannon source/dh source/mini-gmp source/spotify source/spotify/proto
+SOURCES		:=	source source/proto source/protobuf-c source/cJSON source/shannon source/dh source/mini-gmp source/spotify source/spotify/proto source/conv
 DATA		:=	data
 INCLUDES	:=	include
 #ROMFS	:=	romfs

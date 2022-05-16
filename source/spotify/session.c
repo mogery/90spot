@@ -9,6 +9,7 @@
 #include "handshake.h"
 #include "log.h"
 #include "version.h"
+#include "conv.h"
 
 #include "proto/authentication.pb-c.h"
 #include "proto/keyexchange.pb-c.h"
@@ -48,7 +49,7 @@ int session_message_handler(session_ctx* ctx, uint8_t cmd, uint8_t* buf, uint16_
 {
     if (cmd == 0x04)
     {
-        uint32_t server_time = ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16) | ((uint32_t)buf[2] << 8) | buf[3];
+        uint32_t server_time = conv_b2u32(buf);
         int64_t unix_time = time(NULL);
 
         ctx->time_delta = server_time - unix_time;
@@ -157,7 +158,7 @@ int session_update(session_ctx* ctx)
             shn_decrypt(&ctx->ciphers.decode_cipher, header, 3);
 
             ctx->parser.cmd = header[0];
-            ctx->parser.size = (((uint16_t)header[1] << 8) | (uint16_t)header[2]) + SESSION_MAC_SIZE;
+            ctx->parser.size = conv_b2u16(header + 1) + SESSION_MAC_SIZE;
             log_debug("[SESSION] Receiving message (cmd 0x%02X) of size %d\n", ctx->parser.cmd, ctx->parser.size);
 
             ctx->parser.pile = malloc(ctx->parser.size);

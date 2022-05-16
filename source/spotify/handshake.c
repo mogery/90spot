@@ -13,6 +13,7 @@
 #include "mini-gmp.h"
 #include "Shannon.h"
 #include "log.h"
+#include "conv.h"
 
 #include "proto/keyexchange.pb-c.h"
 
@@ -122,7 +123,7 @@ uint8_t* recv_generic_packet(uint32_t* size, int socket_desc)
         goto cleanup;
     }
 
-    *size = (((uint32_t)header[0] << 24) | ((uint32_t)header[1] << 16) | ((uint32_t)header[2] << 8) | (uint32_t)header[3]);
+    *size = conv_b2u32(header);
 
     log_debug("[HANDSHAKE] Received packet of length %d\n", *size);
 

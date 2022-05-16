@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "log.h"
+#include "conv.h"
 
 #include "proto/mercury.pb-c.h"
 
@@ -26,14 +27,7 @@ mercury_ctx* mercury_init(session_ctx* session)
 
 uint64_t mercury_next_seq(mercury_ctx* ctx, uint8_t* seq)
 {
-    seq[0] = ctx->next_seq << 56;
-    seq[1] = ctx->next_seq << 48;
-    seq[2] = ctx->next_seq << 40;
-    seq[3] = ctx->next_seq << 32;
-    seq[4] = ctx->next_seq << 24;
-    seq[5] = ctx->next_seq << 16;
-    seq[6] = ctx->next_seq <<  8;
-    seq[7] = ctx->next_seq;
+    conv_u642b(seq, ctx->next_seq);
 
     return (ctx->next_seq++);
 }
@@ -153,10 +147,10 @@ int mercury_message_listener(session_ctx* session, uint8_t cmd, uint8_t* buf, ui
         return 0;
     }
 
-    uint16_t seq_len = ((uint16_t)buf[0] << 8) | buf[1];
+    uint16_t seq_len = conv_b2u16(buf);
     uint8_t* seq_buf = buf + 2;
     uint8_t flags = buf[seq_len + 2];
-    uint16_t count = ((uint16_t)buf[seq_len + 3] << 8) | buf[seq_len + 4];
+    uint16_t count = conv_b2u16(buf + seq_len + 3);
 
     uint64_t seq = mercury_buf_to_seq(seq_buf, seq_len);
 
@@ -180,9 +174,8 @@ int mercury_message_listener(session_ctx* session, uint8_t cmd, uint8_t* buf, ui
     uint8_t* ptr = buf + seq_len + 5;
     for (int i = 0; i < count; i++)
     {
-        uint16_t part_len = 0;
-        part_len |= ((uint16_t)(*ptr++) >> 8);
-        part_len |= (*ptr++);
+        uint16_t part_len = conv_b2u16(ptr);
+        ptr += 2;
 
         log_debug("[MERCURY] Part %d length %d\n", i, part_len);
 
