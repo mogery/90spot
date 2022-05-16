@@ -20,15 +20,21 @@
 #include "spotify/session.h"
 #include "spotify/mercury.h"
 #include "spotify/idtool.h"
+#include "spotify/audiokey.h"
 
 #include "spotify/proto/metadata.pb-c.h"
 
-
 session_ctx* session = NULL;
 mercury_ctx* mercury = NULL;
+audiokey_ctx* audiokey = NULL;
 
 void cleanup()
 {
+    if (audiokey != NULL)
+    {
+        audiokey_destroy(audiokey);
+    }
+
     if (mercury != NULL)
     {
         mercury_destroy(mercury);
@@ -87,7 +93,25 @@ void authentication_handler(session_ctx* session, bool success)
     {
         panic();
     }
+
+    // Initialize AudioKey
+    audiokey = audiokey_init(session);
+    if (audiokey == NULL)
+    {
+        panic();
+    }
+
     consoleUpdate(NULL);
+}
+
+int test_audiokey_response_handler(audiokey_ctx* audiokey, uint8_t* key, size_t len, void* state)
+{
+    log("got key!\n");
+    for (int i = 0; i < len; i++)
+        printf("%02X", key[i]);
+    printf("\n");
+
+    return 0;
 }
 
 int test_mercury_request_handler(mercury_ctx* mercury, Header* header, mercury_message_part* parts, void* _)
@@ -123,21 +147,34 @@ int test_mercury_request_handler(mercury_ctx* mercury, Header* header, mercury_m
     log("Track unpacked!\n");
     consoleUpdate(NULL);
 
+    spotify_id trackid = spotify_id_from_raw(track->gid.data, SAT_Track);
+
     log("%s - %s\n", track->artist[0]->name, track->name);
     consoleUpdate(NULL);
+
+    AudioFile* bestSupported = NULL;
 
     for (int i = 0; i < track->n_file; i++)
     {
         AudioFile* file = track->file[i];
 
-        char file_id[SPOTIFY_FILE_ID_B16_LENGTH] = "<no id>";
-        if (file->has_file_id)
+        if (file->format < 3)
         {
-            spotify_file_id sfid = spotify_file_id_from_raw(file->file_id.data);
-            spotify_file_id_to_b16(file_id, sfid);
+            if (bestSupported == NULL)
+                bestSupported = file;
+            else if (bestSupported->format < file->format)
+                bestSupported = file;
         }
+    }
 
-        printf("(%d) File %s: format = %d\n", i, file_id, file->format);
+    char file_id[SPOTIFY_FILE_ID_B16_LENGTH] = "<no id>";
+    spotify_file_id sfid = spotify_file_id_from_raw(bestSupported->file_id.data);
+    spotify_file_id_to_b16(file_id, sfid);
+    printf("[Best] File %s: format = %d\n", file_id, bestSupported->format);
+
+    if (audiokey_request(audiokey, trackid, sfid, test_audiokey_response_handler, NULL) < 0)
+    {
+        return -1;
     }
 
     return 0;
