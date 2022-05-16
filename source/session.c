@@ -362,6 +362,21 @@ int session_auth_result_handler(session_ctx* ctx, uint8_t cmd, uint8_t* buf, uin
 
         if (auth_result_handler != NULL)
         {
+            char* err_message = "<no message specified>";
+
+            if (message->error_description != NULL)
+            {
+                err_message = message->error_description;
+            }
+            log_error("[SESSION] Authentication failed!\n\"%s\" (0x%02X)\n", err_message, message->error_code);
+            if (message->has_expiry)
+            {
+                log("[SESSION] Error expires in: %d\n", message->expiry);
+            }
+            if (message->retry_delay)
+            {
+                log("[SESSION] Authentication should be retried in: %d\n", message->retry_delay);
+            }
             auth_result_handler(ctx, false);
         }
     }
