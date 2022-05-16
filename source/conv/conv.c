@@ -48,38 +48,38 @@ uint64_t conv_b2u64(uint8_t* buf)
 
 void conv_u162b(uint8_t* buf, uint16_t val)
 {
-    buf[0] = val <<  8;
+    buf[0] = val >>  8;
     buf[1] = val;
 }
 
 void conv_u642b(uint8_t* buf, uint64_t val)
 {
-    buf[0] = val << 56;
-    buf[1] = val << 48;
-    buf[2] = val << 40;
-    buf[3] = val << 32;
-    buf[4] = val << 24;
-    buf[5] = val << 16;
-    buf[6] = val <<  8;
+    buf[0] = val >> 56;
+    buf[1] = val >> 48;
+    buf[2] = val >> 40;
+    buf[3] = val >> 32;
+    buf[4] = val >> 24;
+    buf[5] = val >> 16;
+    buf[6] = val >>  8;
     buf[7] = val;
 }
 
 void conv_u1282b(uint8_t* buf, __uint128_t val)
 {
-    buf[ 0] = val << 120;
-    buf[ 1] = val << 112;
-    buf[ 2] = val << 104;
-    buf[ 3] = val <<  96;
-    buf[ 4] = val <<  88;
-    buf[ 5] = val <<  80;
-    buf[ 6] = val <<  72;
-    buf[ 7] = val <<  64;
-    buf[ 8] = val <<  56;
-    buf[ 9] = val <<  48;
-    buf[10] = val <<  40;
-    buf[11] = val <<  32;
-    buf[12] = val <<  24;
-    buf[13] = val <<  16;
-    buf[14] = val <<   8;
+    buf[ 0] = val >> 120;
+    buf[ 1] = val >> 112;
+    buf[ 2] = val >> 104;
+    buf[ 3] = val >>  96;
+    buf[ 4] = val >>  88;
+    buf[ 5] = val >>  80;
+    buf[ 6] = val >>  72;
+    buf[ 7] = val >>  64;
+    buf[ 8] = val >>  56;
+    buf[ 9] = val >>  48;
+    buf[10] = val >>  40;
+    buf[11] = val >>  32;
+    buf[12] = val >>  24;
+    buf[13] = val >>  16;
+    buf[14] = val >>   8;
     buf[15] = val;
 }
