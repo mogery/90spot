@@ -173,7 +173,7 @@ int main(int argc, char* argv[])
 
     socketInitializeDefault();
 
-    _log("\x1b[32m", "switchspot %s\n", SWITCHSPOT_VERSION);
+    _log("\x1b[32m", "SwitchSpot %s\n", SWITCHSPOT_VERSION);
     log("Bootstrapping.\n\n");
 
     struct tm* timeStruct = localtime((const time_t *)&unixTime);
