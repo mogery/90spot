@@ -628,8 +628,8 @@ shn_finish(shn_ctx *c, UCHAR *buf, int nbytes)
 }
 
 /*
- * NOTE: The following code has been added by spottie contributors,
- * and it is not part of the original Spottie reference implementation.
+ * NOTE: The following code has been added by SwitchSpot contributors,
+ * and it is not part of the original SwitchSpot reference implementation.
  */
 
 void shn_nonce_u32(shn_ctx *c, uint32_t nonce)

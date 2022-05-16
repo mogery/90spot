@@ -15,7 +15,7 @@ void dh_init() {
     // TODO: SEED RANDOM FOR DH
 
     if (!envHasRandomSeed()) {
-        log_warn("[DH] WARNING! Your random seed is not set. This will mean that you will use the same auth keys over and over again. Do not share traffic captures of Spottie with anyone!");
+        log_warn("[DH] WARNING! Your random seed is not set. This will mean that you will use the same auth keys over and over again. Do not share traffic captures of SwitchSpot with anyone!");
     }
 
     mpz_init_set_ui(dh_generator, DH_GENERATOR);

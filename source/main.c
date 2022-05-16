@@ -153,9 +153,9 @@ int main(int argc, char* argv[])
     time_t unixTime = time(NULL);
 
     char logfile_name[257];
-    snprintf(logfile_name, 256, "/spottie_%ld.log", unixTime);
+    snprintf(logfile_name, 256, "/switchspot_%ld.log", unixTime);
 
-    // Create spottie.log file on the root of the SD card and copy stdout to it
+    // Create switchspot.log file on the root of the SD card and copy stdout to it
     int logfd = open(logfile_name, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (logfd == -1)
     {
@@ -173,7 +173,7 @@ int main(int argc, char* argv[])
 
     socketInitializeDefault();
 
-    _log("\x1b[32m", "spottie %s\n", SPOTTIE_VERSION);
+    _log("\x1b[32m", "switchspot %s\n", SWITCHSPOT_VERSION);
     log("Bootstrapping.\n\n");
 
     struct tm* timeStruct = localtime((const time_t *)&unixTime);

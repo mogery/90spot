@@ -1,4 +1,4 @@
-# spottie
+# SwitchSpot
 Spotify player for Nintendo Switch
 
 ## Libraries
@@ -10,4 +10,4 @@ We use the following libraries:
 
 Protobuf files found in `source/proto` are compiled with `protoc-c` of the [protobuf-c](https://github.com/protobuf-c/protobuf-c) project by Dave Benson and [the protobuf-c authors](https://github.com/protobuf-c/protobuf-c/graphs/contributors), licensed under [BSD-2.0](https://github.com/protobuf-c/protobuf-c/blob/master/LICENSE). The protobuf files originate from the [librespot](https://github.com/librespot-org/librespot) project by [Paul Lietar](https://github.com/plietar) and [librespot contributors](https://github.com/librespot-org/librespot/graphs/contributors), licensed under [MIT](https://github.com/librespot-org/librespot/blob/dev/LICENSE).
 
-Spottie's Spotify interfacing code is heavily based on the [librespot](https://github.com/librespot-org/librespot) project by [Paul Lietar](https://github.com/plietar) and [librespot contributors](https://github.com/librespot-org/librespot/graphs/contributors), licensed under [MIT](https://github.com/librespot-org/librespot/blob/dev/LICENSE).
+SwitchSpot's Spotify interfacing code is heavily based on the [librespot](https://github.com/librespot-org/librespot) project by [Paul Lietar](https://github.com/plietar) and [librespot contributors](https://github.com/librespot-org/librespot/graphs/contributors), licensed under [MIT](https://github.com/librespot-org/librespot/blob/dev/LICENSE).

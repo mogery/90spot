@@ -306,14 +306,14 @@ int session_send_client_response_encryped(session_ctx* ctx, char* username, char
     system_info__init(&sysinfo);
     sysinfo.cpu_family = CPU_FAMILY__CPU_ARM;
     sysinfo.os = OS__OS_UNKNOWN; // no option for HOS :D
-    sysinfo.system_information_string = "librespot-esque spottie-" SPOTTIE_VERSION; // system_information_string must start with "librespot", otherwise we'll get denied by APs
+    sysinfo.system_information_string = "librespot-esque switchspot-" SWITCHSPOT_VERSION; // system_information_string must start with "librespot", otherwise we'll get denied by APs
     sysinfo.device_id = device_id;
 
     ClientResponseEncrypted message;
     client_response_encrypted__init(&message);
     message.login_credentials = &creds;
     message.system_info = &sysinfo;
-    message.version_string = "spottie-" SPOTTIE_VERSION;
+    message.version_string = "switchspot-" SWITCHSPOT_VERSION;
 
     size_t buf_len = client_response_encrypted__get_packed_size(&message);
     uint8_t* buf = malloc(buf_len);
