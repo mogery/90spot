@@ -20,6 +20,8 @@
 #include "secrets.h"
 #include "spotify/mercury.h"
 
+#include "spotify/proto/metadata.pb-c.h"
+
 session_ctx* session = NULL;
 mercury_ctx* mercury = NULL;
 
@@ -84,8 +86,45 @@ void authentication_handler(session_ctx* session, bool success)
         panic();
     }
     consoleUpdate(NULL);
+}
 
-    
+int test_mercury_request_handler(mercury_ctx* mercury, Header* header, mercury_response_part* parts, void* _)
+{
+    log("Request handler called!\n");
+    consoleUpdate(NULL);
+
+    if (header->status_code >= 300)
+    {
+        log_error("Bad status code! Halting.");
+        consoleUpdate(NULL);
+        return -1;
+    }
+
+    if (parts == NULL)
+    {
+        log_error("Received no parts! Halting.");
+        consoleUpdate(NULL);
+        return -1;
+    }
+
+    log("1st part: #%p, len %ld\n", parts->buf, parts->len);
+    consoleUpdate(NULL);
+
+    Track* track = track__unpack(NULL, parts->len, parts->buf);
+    if (track == NULL)
+    {
+        log_error("Failed to unpack Track!\n");
+        consoleUpdate(NULL);
+        return -1;
+    }
+
+    log("Track unpacked!\n");
+    consoleUpdate(NULL);
+
+    log("%s - %s\n", track->artist[0]->name, track->name);
+    consoleUpdate(NULL);
+
+    return 0;
 }
 
 int main(int argc, char* argv[])
@@ -181,7 +220,7 @@ int main(int argc, char* argv[])
             sent = true;
             log("Sending mercury GET\n");
             consoleUpdate(NULL);
-            if (mercury_get_request(mercury, "hm://metadata/3/track/a7447d8aef4e4a2f94c074d833c37265") < 0)
+            if (mercury_get_request(mercury, "hm://metadata/3/track/a7447d8aef4e4a2f94c074d833c37265", test_mercury_request_handler, NULL) < 0)
             {
                 panic();
             }

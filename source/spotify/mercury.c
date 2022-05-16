@@ -106,33 +106,36 @@ size_t mercury_encode_request(uint8_t** out, uint8_t* seq, uint16_t seq_len, cha
     return full_len;
 }
 
-int mercury_get_request(mercury_ctx* ctx, char* uri)
+int mercury_general_request(mercury_ctx* ctx, char* uri, uint8_t method_code, char* method, mercury_payload* payloads, mercury_response_handler handler, void* state)
 {
-    // 
-    //0xB2
-
     uint8_t seq_buf[8];
     uint64_t seq = mercury_next_seq(ctx, seq_buf);
 
     uint8_t* packet;
-    size_t packet_len = mercury_encode_request(&packet, seq_buf, 8, uri, "GET", NULL);
+    size_t packet_len = mercury_encode_request(&packet, seq_buf, 8, uri, "GET", payloads);
 
-    log_debug("[MERCURY] GET %s with seq %ld, size %ld\n", uri, seq, packet_len);
+    log_debug("[MERCURY] %ld %s with seq %ld, size %ld\n", seq, uri, seq, packet_len);
 
     mercury_pending_message* msg = malloc(sizeof(mercury_pending_message));
     msg->seq = seq;
-    msg->buf = NULL;
-    msg->len = 0;
+    msg->parts = NULL;
     msg->next = ctx->messages;
+    msg->handler = handler;
+    msg->handler_state = state;
     ctx->messages = msg;
 
     if (session_send_message(ctx->session, 0xB2, packet, packet_len) < 0)
     {
-        log_error("[MERCURY] Failed to send GET request!");
+        log_error("[MERCURY] Failed to send %s request!", method);
         return -1;
     }
 
     return 0;
+}
+
+int mercury_get_request(mercury_ctx* ctx, char* uri, mercury_response_handler handler, void* state)
+{
+    return mercury_general_request(ctx, uri, 0xB2, "GET", NULL, handler, state);
 }
 
 #pragma endregion Requests
@@ -179,24 +182,107 @@ int mercury_message_listener(session_ctx* session, uint8_t cmd, uint8_t* buf, ui
 
         log_debug("[MERCURY] Part %d length %d\n", i, part_len);
 
-        if (msg->len == 0)
+        mercury_response_part* part = malloc(sizeof(mercury_response_part));
+        part->len = part_len;
+        part->next = NULL;
+
+        // We need to allocate and copy here because session
+        // will free buf after this handler is done running.
+        part->buf = malloc(part_len);
+        memcpy(part->buf, ptr, part->len);
+
+        if (msg->parts == NULL)
         {
-            msg->buf = malloc(part_len);
+            msg->parts = part;
         }
         else
         {
-            msg->buf = realloc(msg->buf, msg->len + part_len);
+            // We need to insert the part to the end of the list
+            // instead of the usual "slap it onto the beginning"
+            //
+
+            // Traverse to the end of the linked list
+            mercury_response_part* rptr = msg->parts;
+            while (rptr->next != NULL)
+                rptr = rptr->next;
+            
+            // Insert part to the end
+            rptr->next = part;
         }
 
-        memcpy(msg->buf + msg->len, ptr, part_len);
-
-        msg->len += part_len;
         ptr += part_len;
     }
 
+    log("mercury leftovers: %ld (overall len: %d)\n", ptr - buf, len);
+
     if (flags == 0x1)
     {
-        log_debug("[MERCURY] Request with seq %ld completed!\n", seq);
+        mercury_response_part* header_part = NULL;
+        int res = 0;
+
+        // Make sure we have at least 1 part (Header)
+        if (msg->parts == NULL)
+        {
+            log_warn("[MERCURY] Request (seq %ld) arrived with 0 parts. Skipping handler.\n", seq);
+            goto skip_handler;
+        }
+
+        // Parse Header part
+        header_part = msg->parts;
+        msg->parts = header_part->next; // Skip header in msg->parts
+        Header* header = header__unpack(NULL, header_part->len, header_part->buf);
+        if (header == NULL)
+        {
+            log_warn("[MERCURY] Failed to parse header for request (seq %ld). Skipping handler.\n", seq);
+            goto skip_handler;
+        }
+        log_debug("[MERCURY] %ld %s %d\n", seq, header->method, header->status_code);
+
+        if (msg->handler != NULL && msg->handler(ctx, header, msg->parts, msg->handler_state) < 0)
+        {
+            log_debug("[MERCURY] Message handler failed, passing error through...\n");
+            res = -1;
+        }
+
+        // Free unpacket header
+        header__free_unpacked(header, NULL);
+
+skip_handler:
+        // Free raw header part
+        if (header_part != NULL)
+        {
+            free(header_part->buf);
+            free(header_part);
+        }
+        
+        mercury_response_part* fptr = msg->parts;
+        while (fptr != NULL)
+        {
+            mercury_response_part* next = fptr->next;
+
+            free(fptr->buf);
+            free(fptr);
+
+            fptr = next;
+        }
+
+        // Remove message from pending message list
+        mercury_pending_message* mptr = ctx->messages;
+        while (mptr != NULL)
+        {
+            if (mptr->next == msg)
+            {
+                mptr->next = mptr->next->next;
+                break;
+            }
+
+            mptr = mptr->next;
+        }
+
+        // Free message
+        free(msg);
+
+        if (res < 0) return res;
     }
     
     // TODO: handle subscriptions (0xB5)
