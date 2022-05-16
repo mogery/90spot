@@ -43,6 +43,7 @@ typedef struct mercury_message_part mercury_message_part;
 
 mercury_ctx* mercury_init(session_ctx* session);
 int mercury_get_request(mercury_ctx* ctx, char* uri, mercury_response_handler handler, void* state);
+int mercury_send_request(mercury_ctx* ctx, char* uri, uint8_t* buf, uint16_t len, mercury_response_handler handler, void* state);
 void mercury_destroy(mercury_ctx* ctx);
 
 #endif

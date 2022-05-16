@@ -123,7 +123,7 @@ int mercury_general_request(mercury_ctx* ctx, char* uri, uint8_t method_code, ch
     uint8_t* packet;
     size_t packet_len = mercury_encode_request(&packet, seq_buf, 8, uri, "GET", payloads);
 
-    log_debug("[MERCURY] %ld %s with seq %ld, size %ld\n", seq, uri, seq, packet_len);
+    log_debug("[MERCURY] %ld %s %s (%ld)\n", seq, method, uri, packet_len);
 
     mercury_pending_message* msg = malloc(sizeof(mercury_pending_message));
     msg->seq = seq;
@@ -145,6 +145,18 @@ int mercury_general_request(mercury_ctx* ctx, char* uri, uint8_t method_code, ch
 int mercury_get_request(mercury_ctx* ctx, char* uri, mercury_response_handler handler, void* state)
 {
     return mercury_general_request(ctx, uri, 0xB2, "GET", NULL, handler, state);
+}
+
+int mercury_send_request(mercury_ctx* ctx, char* uri, uint8_t* buf, uint16_t len, mercury_response_handler handler, void* state)
+{
+    mercury_message_part* payload = malloc(sizeof(mercury_message_part)); 
+    payload->buf = buf;
+    payload->len = len;
+    payload->next = NULL;
+
+    return mercury_general_request(ctx, uri, 0xB2, "SEND", payload, handler, state);
+
+    // payload is freed by general_request
 }
 
 #pragma endregion Requests
@@ -222,8 +234,6 @@ int mercury_message_listener(session_ctx* session, uint8_t cmd, uint8_t* buf, ui
         ptr += part_len;
     }
 
-    log("mercury leftovers: %ld (overall len: %d)\n", ptr - buf, len);
-
     if (flags == 0x1)
     {
         mercury_message_part* header_part = NULL;
@@ -245,7 +255,7 @@ int mercury_message_listener(session_ctx* session, uint8_t cmd, uint8_t* buf, ui
             log_warn("[MERCURY] Failed to parse header for request (seq %ld). Skipping handler.\n", seq);
             goto skip_handler;
         }
-        log_debug("[MERCURY] %ld %s %d\n", seq, header->method, header->status_code);
+        log_debug("[MERCURY] %ld %s %d\n", seq, header->uri, header->status_code);
 
         if (msg->handler != NULL && msg->handler(ctx, header, msg->parts, msg->handler_state) < 0)
         {

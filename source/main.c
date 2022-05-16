@@ -88,7 +88,7 @@ void authentication_handler(session_ctx* session, bool success)
     consoleUpdate(NULL);
 }
 
-int test_mercury_request_handler(mercury_ctx* mercury, Header* header, mercury_response_part* parts, void* _)
+int test_mercury_request_handler(mercury_ctx* mercury, Header* header, mercury_message_part* parts, void* _)
 {
     log("Request handler called!\n");
     consoleUpdate(NULL);
@@ -157,7 +157,8 @@ int main(int argc, char* argv[])
 
     socketInitializeDefault();
 
-    log("Bootstrapping spottie...\n");
+    _log("\x1b[32m", "spottie %s\n", SPOTTIE_VERSION);
+    log("Bootstrapping.\n\n");
 
     struct tm* timeStruct = localtime((const time_t *)&unixTime);
     log("%i. %02i. %02i. %02i:%02i:%02i\n\n", timeStruct->tm_year + 1900, timeStruct->tm_mon + 1, timeStruct->tm_mday, timeStruct->tm_hour, timeStruct->tm_min, timeStruct->tm_sec);
