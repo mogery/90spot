@@ -48,7 +48,7 @@ uint64_t mercury_buf_to_seq(uint8_t* buf, uint16_t len)
 
 #pragma region Requests
 
-size_t mercury_encode_request(uint8_t** out, uint8_t* seq, uint16_t seq_len, char* uri, char* method, mercury_payload* payloads)
+size_t mercury_encode_request(uint8_t** out, uint8_t* seq, uint16_t seq_len, char* uri, char* method, mercury_message_part* payloads)
 {
     // Assemble protobuf header
     Header header;
@@ -58,7 +58,7 @@ size_t mercury_encode_request(uint8_t** out, uint8_t* seq, uint16_t seq_len, cha
     uint16_t header_size = header__get_packed_size(&header);
 
     // Calculate the count & byte size of provided payloads
-    mercury_payload* ptr = payloads;
+    mercury_message_part* ptr = payloads;
     uint16_t payload_count = 1; // this is 1 instead of 0 because the header counts as a payload
     size_t payloads_size = 0;
     while (ptr != NULL)
@@ -95,10 +95,19 @@ size_t mercury_encode_request(uint8_t** out, uint8_t* seq, uint16_t seq_len, cha
     ptr = payloads;
     while (ptr != NULL)
     {
-        *(pptr++) = ptr->len >> 8;
-        *(pptr++) = ptr->len;
+        mercury_message_part* next = ptr->next;
+
+        conv_u162b(pptr, ptr->len);
+        pptr += 2;
+
         memcpy(pptr, ptr->buf, ptr->len);
         pptr += ptr->len;
+
+        // free payload after sending it
+        free(ptr->buf); 
+        free(ptr);
+
+        ptr = next;
     }
 
     *out = packet;
@@ -106,7 +115,7 @@ size_t mercury_encode_request(uint8_t** out, uint8_t* seq, uint16_t seq_len, cha
     return full_len;
 }
 
-int mercury_general_request(mercury_ctx* ctx, char* uri, uint8_t method_code, char* method, mercury_payload* payloads, mercury_response_handler handler, void* state)
+int mercury_general_request(mercury_ctx* ctx, char* uri, uint8_t method_code, char* method, mercury_message_part* payloads, mercury_response_handler handler, void* state)
 {
     uint8_t seq_buf[8];
     uint64_t seq = mercury_next_seq(ctx, seq_buf);
@@ -182,7 +191,7 @@ int mercury_message_listener(session_ctx* session, uint8_t cmd, uint8_t* buf, ui
 
         log_debug("[MERCURY] Part %d length %d\n", i, part_len);
 
-        mercury_response_part* part = malloc(sizeof(mercury_response_part));
+        mercury_message_part* part = malloc(sizeof(mercury_message_part));
         part->len = part_len;
         part->next = NULL;
 
@@ -202,7 +211,7 @@ int mercury_message_listener(session_ctx* session, uint8_t cmd, uint8_t* buf, ui
             //
 
             // Traverse to the end of the linked list
-            mercury_response_part* rptr = msg->parts;
+            mercury_message_part* rptr = msg->parts;
             while (rptr->next != NULL)
                 rptr = rptr->next;
             
@@ -217,7 +226,7 @@ int mercury_message_listener(session_ctx* session, uint8_t cmd, uint8_t* buf, ui
 
     if (flags == 0x1)
     {
-        mercury_response_part* header_part = NULL;
+        mercury_message_part* header_part = NULL;
         int res = 0;
 
         // Make sure we have at least 1 part (Header)
@@ -255,10 +264,10 @@ skip_handler:
             free(header_part);
         }
         
-        mercury_response_part* fptr = msg->parts;
+        mercury_message_part* fptr = msg->parts;
         while (fptr != NULL)
         {
-            mercury_response_part* next = fptr->next;
+            mercury_message_part* next = fptr->next;
 
             free(fptr->buf);
             free(fptr);
