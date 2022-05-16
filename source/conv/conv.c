@@ -26,6 +26,12 @@ uint64_t conv_b2u64(uint8_t* buf)
         (uint64_t)buf[7];
 }
 
+void conv_u162b(uint8_t* buf, uint16_t val)
+{
+    buf[0] = val <<  8;
+    buf[1] = val;
+}
+
 void conv_u642b(uint8_t* buf, uint64_t val)
 {
     buf[0] = val << 56;
