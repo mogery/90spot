@@ -73,7 +73,7 @@ struct sockaddr_in* apresolve()
         goto cleanup;
     }
 
-    char* request_message = "GET / HTTP/1.1\r\nHost: apresolve.spotify.com\r\nConnection: close\r\nUser-Agent: " SPOTTIE_UA "\r\nAccept: application/json\r\n\r\n";
+    char* request_message = "GET / HTTP/1.1\r\nHost: apresolve.spotify.com\r\nConnection: close\r\nUser-Agent: spottie/" SPOTTIE_VERSION "\r\nAccept: application/json\r\n\r\n";
 
     if (send(socket_desc, request_message, strlen(request_message), 0) < 0)
     {

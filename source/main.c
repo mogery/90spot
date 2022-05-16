@@ -11,14 +11,14 @@
 
 #include <switch/services/set.h>
 #include <switch.h>
-#include "apresolve.h"
+#include "spotify/apresolve.h"
 #include "protobuf-c.h"
 #include "dh.h"
-#include "handshake.h"
-#include "session.h"
+#include "spotify/handshake.h"
+#include "spotify/session.h"
 #include "log.h"
 #include "secrets.h"
-#include "mercury.h"
+#include "spotify/mercury.h"
 
 session_ctx* session = NULL;
 mercury_ctx* mercury = NULL;
