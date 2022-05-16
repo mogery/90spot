@@ -315,5 +315,25 @@ void mercury_destroy(mercury_ctx* ctx)
 {
     session_remove_message_listener(ctx->session, mercury_message_listener);
 
+    // Free all pending messages
+    mercury_pending_message* mptr = ctx->messages;
+    while (mptr != NULL)
+    {
+        mercury_pending_message* mnext = mptr->next;
+        
+        // Free all message parts
+        mercury_message_part* pptr = mptr->parts;
+        while (pptr != NULL)
+        {
+            mercury_message_part* pnext = pptr->next;
+            free(pptr->buf);
+            free(pptr);
+            pptr = pnext;
+        }
+
+        free(mptr);
+        mptr = mnext;
+    }
+
     free(ctx);
 }
