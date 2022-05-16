@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include "session.h"
+#include "idtool.h"
 
 #include "proto/mercury.pb-c.h"
 
