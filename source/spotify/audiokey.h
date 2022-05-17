@@ -10,7 +10,7 @@
 struct audiokey_ctx {
     session_ctx* session;
 
-    uint64_t next_seq;
+    uint32_t next_seq;
     struct audiokey_pending_request* requests;
 };
 
