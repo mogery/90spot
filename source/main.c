@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <errno.h>
 
+#include <switch/crypto/aes_ctr.h>
 #include <switch/services/set.h>
 #include <switch.h>
 #include "protobuf-c.h"
@@ -101,12 +102,43 @@ void authentication_handler(session_ctx* session, bool success)
     consoleUpdate(NULL);
 }
 
-int test_audiokey_response_handler(audiokey_ctx* audiokey, uint8_t* key, size_t len, void* state)
+struct ak_passthrough {
+    spotify_id trackid;
+    spotify_file_id fileid;
+
+    Aes128CtrContext enc;
+};
+
+int test_channelmgr_data_handler(
+    struct channelmgr_ctx* ctx, // The ChannelMgr context the response originates from
+    uint8_t* buf, // Data buffer
+    uint16_t len, // Data buffer length
+    void* _pt // Optional state arg
+)
 {
-    log("got key!\n");
-    for (int i = 0; i < len; i++)
-        printf("%02X", key[i]);
-    printf("\n");
+    struct ak_passthrough* pt = _pt;
+
+    uint8_t* dec = malloc(len);
+    aes128CtrCrypt(&pt->enc, dec, buf, len);
+
+    printf("%c%c%c%c\n", dec[0], dec[1], dec[2], dec[3]);
+
+    return 0;
+}
+
+int test_audiokey_response_handler(audiokey_ctx* audiokey, uint8_t* _key, size_t len, void* _pt)
+{
+    struct ak_passthrough* pt = _pt;
+    
+    uint8_t* key = malloc(len);
+    memcpy(key, _key, len);
+
+    uint8_t ctr[0x10];
+    memset(ctr, 0, 0x10);
+
+    aes128CtrContextCreate(&pt->enc, key, ctr);
+
+    channelmgr_channel_allocate(channelmgr, NULL, test_channelmgr_data_handler, NULL, pt);
 
     return 0;
 }
@@ -169,7 +201,11 @@ int test_mercury_request_handler(mercury_ctx* mercury, Header* header, mercury_m
     spotify_file_id_to_b16(file_id, sfid);
     printf("[Best] File %s: format = %d\n", file_id, bestSupported->format);
 
-    if (audiokey_request(audiokey, trackid, sfid, test_audiokey_response_handler, NULL) < 0)
+    struct ak_passthrough* pt = malloc(sizeof(struct ak_passthrough));
+    pt->fileid = sfid;
+    pt->trackid = trackid;
+
+    if (audiokey_request(audiokey, trackid, sfid, test_audiokey_response_handler, pt) < 0)
     {
         return -1;
     }
