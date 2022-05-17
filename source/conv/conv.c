@@ -57,7 +57,7 @@ void conv_u322b(uint8_t* buf, uint32_t val)
     buf[0] = val >> 24;
     buf[1] = val >> 16;
     buf[2] = val >>  8;
-    buf[7] = val;
+    buf[3] = val;
 }
 
 void conv_u642b(uint8_t* buf, uint64_t val)
