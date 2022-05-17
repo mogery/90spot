@@ -64,6 +64,7 @@ typedef struct channelmgr_header channelmgr_header;
 typedef struct channelmgr_channel channelmgr_channel;
 
 channelmgr_ctx* channelmgr_init(session_ctx* session);
+channelmgr_channel* channelmgr_channel_allocate(channelmgr_ctx* ctx, channelmgr_header_handler header_handler, channelmgr_data_handler data_handler, channelmgr_close_handler close_handler, void* handler_state);
 void channelmgr_destroy(channelmgr_ctx* ctx);
 
 #endif

@@ -25,11 +25,25 @@ channelmgr_ctx* channelmgr_init(session_ctx* session)
     return res; 
 }
 
-uint32_t channelmgr_next_seq(channelmgr_ctx* ctx, uint8_t* seq)
+uint32_t channelmgr_next_seq(channelmgr_ctx* ctx)
 {
-    conv_u322b(seq, ctx->next_seq);
-
     return (ctx->next_seq++);
+}
+
+channelmgr_channel* channelmgr_channel_allocate(channelmgr_ctx* ctx, channelmgr_header_handler header_handler, channelmgr_data_handler data_handler, channelmgr_close_handler close_handler, void* handler_state)
+{
+    channelmgr_channel* chan = malloc(sizeof(channelmgr_channel));
+    chan->seq = channelmgr_next_seq(ctx);
+    chan->state = CS_Header;
+    chan->headers = NULL;
+    chan->header_handler = header_handler;
+    chan->data_handler = data_handler;
+    chan->close_handler = close_handler;
+    chan->handler_state = handler_state;
+    chan->next = ctx->channels;
+    ctx->channels = chan;
+
+    return chan;
 }
 
 int channelmgr_message_listener(session_ctx* session, uint8_t cmd, uint8_t* buf, uint16_t len, void* _ctx)
@@ -98,10 +112,9 @@ int channelmgr_message_listener(session_ctx* session, uint8_t cmd, uint8_t* buf,
             {
                 chan->state = CS_Data;
 
-                if (chan->header_handler(ctx, chan->headers, chan->handler_state) < 0)
+                if (chan->header_handler != NULL && chan->header_handler(ctx, chan->headers, chan->handler_state) < 0)
                     return -1;
             }
-            
         }
         else if (chan->state == CS_Data)
         {
@@ -110,13 +123,15 @@ int channelmgr_message_listener(session_ctx* session, uint8_t cmd, uint8_t* buf,
                 log_debug("[CHANNELMGR] Channel %u closed\n", seq);
                 chan->state = CS_Closed;
                 
-                if (chan->close_handler(ctx, chan->handler_state) < 0)
+                if (chan->close_handler != NULL && chan->close_handler(ctx, chan->handler_state) < 0)
                     return -1;
+
+                // TODO: Destroy closed channels
 
                 goto skip;
             }
 
-            if (chan->data_handler(ctx, buf + 2, len - 2, chan->data_handler) < 0)
+            if (chan->data_handler != NULL && chan->data_handler(ctx, buf + 2, len - 2, chan->handler_state) < 0)
                 return -1;
         }
         else if (chan->state == CS_Closed)
