@@ -142,12 +142,12 @@ uint8_t* recv_generic_packet(uint32_t* size, int socket_desc)
         goto cleanup;
     }
 
-    // log("recv packet:\n");
+    // log_info("recv packet:\n");
     // for (int i = 0; i < *size; i++)
     // {
-    //     log("%02x", packet[i]);
+    //     log_info("%02x", packet[i]);
     // }
-    // log("\n");
+    // log_info("\n");
 
 cleanup:
     return packet;
@@ -333,7 +333,7 @@ hs_res* spotify_handshake(struct sockaddr_in *ap, dh_keys keys)
     res->ciphers = ciphers;
     res->socket_desc = socket_desc;
 
-    log("[HANDSHAKE] All done! :))))\n");
+    log_info("[HANDSHAKE] All done! :))))\n");
     
 cleanup:
     if (res == NULL)

@@ -37,7 +37,7 @@ session_ctx* session_init(hs_res* handshake)
 
     session_add_message_listener(ctx, session_message_handler, NULL);
 
-    log("[SESSION] Initialized!\n");
+    log_info("[SESSION] Initialized!\n");
 
     return ctx;
 }
@@ -52,7 +52,7 @@ int session_message_handler(session_ctx* ctx, uint8_t cmd, uint8_t* buf, uint16_
         int64_t unix_time = time(NULL);
 
         ctx->time_delta = server_time - unix_time;
-        log("[SESSION] Time delta between server and client: %d\n", ctx->time_delta);
+        log_info("[SESSION] Time delta between server and client: %d\n", ctx->time_delta);
     }
     else if (cmd == 0x1B)
     {
@@ -60,7 +60,7 @@ int session_message_handler(session_ctx* ctx, uint8_t cmd, uint8_t* buf, uint16_
         memcpy(ctx->country, buf, len);
         ctx->country[len] = 0;
 
-        log("[SESSION] Country: %s\n", ctx->country);
+        log_info("[SESSION] Country: %s\n", ctx->country);
     }
 
     return 0;
@@ -346,7 +346,7 @@ int session_auth_result_handler(session_ctx* ctx, uint8_t cmd, uint8_t* buf, uin
         ctx->auth.token = malloc(ctx->auth.token_len);
         memcpy(ctx->auth.token, message->reusable_auth_credentials.data, ctx->auth.token_len);
 
-        log("[SESSION] Authentication successful!\n[SESSION] Username: %s\n", ctx->auth.username);
+        log_info("[SESSION] Authentication successful!\n[SESSION] Username: %s\n", ctx->auth.username);
 
         apwelcome__free_unpacked(message, NULL);
         
@@ -371,11 +371,11 @@ int session_auth_result_handler(session_ctx* ctx, uint8_t cmd, uint8_t* buf, uin
             log_error("[SESSION] Authentication failed!\n\"%s\" (0x%02X)\n", err_message, message->error_code);
             if (message->has_expiry)
             {
-                log("[SESSION] Error expires in: %d\n", message->expiry);
+                log_info("[SESSION] Error expires in: %d\n", message->expiry);
             }
             if (message->retry_delay)
             {
-                log("[SESSION] Authentication should be retried in: %d\n", message->retry_delay);
+                log_info("[SESSION] Authentication should be retried in: %d\n", message->retry_delay);
             }
             auth_result_handler(ctx, false);
         }
@@ -405,7 +405,7 @@ int session_authenticate(session_ctx* ctx, char* username, char* password, void 
         device_id = nick->nickname;
     }
 
-    log("[SESSION] Authenticating with user %s (device name: %s)\n", username, device_id);
+    log_info("[SESSION] Authenticating with user %s (device name: %s)\n", username, device_id);
 
     session_add_message_listener(ctx, session_auth_result_handler, result);
 

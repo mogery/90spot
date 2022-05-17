@@ -52,7 +52,7 @@ void cleanup()
 
 void NORETURN panic()
 {
-    log("\n\n[!] panic() called: press + button to exit gracefully\n");
+    log_info("\n\n[!] panic() called: press + button to exit gracefully\n");
     consoleUpdate(NULL);
 
     PadState pad;
@@ -145,7 +145,7 @@ int test_audiokey_response_handler(audiokey_ctx* audiokey, uint8_t* _key, size_t
 
 int test_mercury_request_handler(mercury_ctx* mercury, Header* header, mercury_message_part* parts, void* _)
 {
-    log("Request handler called!\n");
+    log_info("Request handler called!\n");
     consoleUpdate(NULL);
 
     if (header->status_code >= 300)
@@ -162,7 +162,7 @@ int test_mercury_request_handler(mercury_ctx* mercury, Header* header, mercury_m
         return -1;
     }
 
-    log("1st part: #%p, len %d\n", parts->buf, parts->len);
+    log_info("1st part: #%p, len %d\n", parts->buf, parts->len);
     consoleUpdate(NULL);
 
     Track* track = track__unpack(NULL, parts->len, parts->buf);
@@ -173,12 +173,12 @@ int test_mercury_request_handler(mercury_ctx* mercury, Header* header, mercury_m
         return -1;
     }
 
-    log("Track unpacked!\n");
+    log_info("Track unpacked!\n");
     consoleUpdate(NULL);
 
     spotify_id trackid = spotify_id_from_raw(track->gid.data, SAT_Track);
 
-    log("%s - %s\n", track->artist[0]->name, track->name);
+    log_info("%s - %s\n", track->artist[0]->name, track->name);
     consoleUpdate(NULL);
 
     AudioFile* bestSupported = NULL;
@@ -244,10 +244,10 @@ int main(int argc, char* argv[])
     socketInitializeDefault();
 
     _log("\x1b[32m", "SwitchSpot %s\n", SWITCHSPOT_VERSION);
-    log("Bootstrapping.\n\n");
+    log_info("Bootstrapping.\n\n");
 
     struct tm* timeStruct = localtime((const time_t *)&unixTime);
-    log("%i. %02i. %02i. %02i:%02i:%02i\n\n", timeStruct->tm_year + 1900, timeStruct->tm_mon + 1, timeStruct->tm_mday, timeStruct->tm_hour, timeStruct->tm_min, timeStruct->tm_sec);
+    log_info("%i. %02i. %02i. %02i:%02i:%02i\n\n", timeStruct->tm_year + 1900, timeStruct->tm_mon + 1, timeStruct->tm_mday, timeStruct->tm_hour, timeStruct->tm_min, timeStruct->tm_sec);
 
     log_debug("[PROTOBUF] Version: %s\n", protobuf_c_version());
     consoleUpdate(NULL);
@@ -305,7 +305,7 @@ int main(int argc, char* argv[])
         if (kDown & HidNpadButton_A && !sent)
         {
             sent = true;
-            log("Sending mercury GET\n");
+            log_info("Sending mercury GET\n");
             consoleUpdate(NULL);
 
             spotify_id track_id = spotify_id_from_b62("2V6BCyyQ7kSXhkXwAb13OR", SAT_Track);

@@ -18,7 +18,7 @@ void log_set_fd(int fd);
     }\
 }
 
-#define log(...) {\
+#define log_info(...) {\
     _log(LOG_NORMAL_SEQ, __VA_ARGS__);\
 }
 

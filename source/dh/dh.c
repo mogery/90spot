@@ -21,7 +21,7 @@ void dh_init() {
     mpz_init_set_ui(dh_generator, DH_GENERATOR);
     mpz_init_set_str(dh_prime, DH_PRIME, 16);
 
-    log("[DH] Initialized!\n");
+    log_info("[DH] Initialized!\n");
 }
 
 dh_keys dh_keygen()
