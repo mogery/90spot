@@ -21,29 +21,28 @@
 #include "spotify/mercury.h"
 #include "spotify/idtool.h"
 #include "spotify/audiokey.h"
+#include "spotify/channelmgr.h"
 
 #include "spotify/proto/metadata.pb-c.h"
 
 session_ctx* session = NULL;
 mercury_ctx* mercury = NULL;
 audiokey_ctx* audiokey = NULL;
+channelmgr_ctx* channelmgr = NULL;
 
 void cleanup()
 {
+    if (channelmgr != NULL)
+        channelmgr_destroy(channelmgr);
+    
     if (audiokey != NULL)
-    {
         audiokey_destroy(audiokey);
-    }
 
     if (mercury != NULL)
-    {
         mercury_destroy(mercury);
-    }
 
     if (session != NULL)
-    {
         session_destroy(session);
-    }
 
     socketExit();
     setsysExit();
@@ -88,18 +87,16 @@ void authentication_handler(session_ctx* session, bool success)
     }
 
     // Initialize Mercury
-    mercury = mercury_init(session);
-    if (mercury == NULL)
-    {
+    if ((mercury = mercury_init(session)) == NULL)
         panic();
-    }
 
     // Initialize AudioKey
-    audiokey = audiokey_init(session);
-    if (audiokey == NULL)
-    {
+    if ((audiokey = audiokey_init(session)) == NULL)
         panic();
-    }
+
+    // Initialize ChannelMgr
+    if ((channelmgr = channelmgr_init(session)) == NULL)
+        panic();
 
     consoleUpdate(NULL);
 }
