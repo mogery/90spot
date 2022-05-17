@@ -14,8 +14,10 @@
 #include <switch.h>
 #include "protobuf-c.h"
 #include "dh.h"
+#include "conv.h"
 #include "log.h"
 #include "secrets.h"
+#include "stb_vorbis.h"
 #include "spotify/apresolve.h"
 #include "spotify/handshake.h"
 #include "spotify/session.h"
@@ -23,6 +25,8 @@
 #include "spotify/idtool.h"
 #include "spotify/audiokey.h"
 #include "spotify/channelmgr.h"
+#include "spotify/fetch.h"
+#include "spotify/audiofetch.h"
 
 #include "spotify/proto/metadata.pb-c.h"
 
@@ -30,9 +34,17 @@ session_ctx* session = NULL;
 mercury_ctx* mercury = NULL;
 audiokey_ctx* audiokey = NULL;
 channelmgr_ctx* channelmgr = NULL;
+fetch_ctx* fetch = NULL;
+audiofetch_ctx* audiofetch = NULL;
 
 void cleanup()
 {
+    if (audiofetch != NULL)
+        audiofetch_destroy(audiofetch);
+
+    if (fetch != NULL)
+        fetch_destroy(fetch);
+
     if (channelmgr != NULL)
         channelmgr_destroy(channelmgr);
     
@@ -98,50 +110,86 @@ void authentication_handler(session_ctx* session, bool success)
     // Initialize ChannelMgr
     if ((channelmgr = channelmgr_init(session)) == NULL)
         panic();
+    
+    // Initialize Fetch
+    if ((fetch = fetch_init(channelmgr)) == NULL)
+        panic();
+    
+    // Initialize AudioFetch
+    if ((audiofetch = audiofetch_init(fetch, audiokey)) == NULL)
+        panic();
 
     consoleUpdate(NULL);
 }
 
-struct ak_passthrough {
-    spotify_id trackid;
-    spotify_file_id fileid;
+// struct ak_passthrough {
+//     spotify_id trackid;
+//     spotify_file_id fileid;
 
-    Aes128CtrContext enc;
-};
+//     Aes128CtrContext enc;
+//     FILE *file;
+// };
 
-int test_channelmgr_data_handler(
-    struct channelmgr_ctx* ctx, // The ChannelMgr context the response originates from
-    uint8_t* buf, // Data buffer
-    uint16_t len, // Data buffer length
-    void* _pt // Optional state arg
-)
-{
-    struct ak_passthrough* pt = _pt;
+// int test_fetch_data_handler(
+//     struct fetch_ctx* ctx, // The Fetch context the response originates from
+//     struct fetch_pending_request* req,
+//     uint8_t* buf, // Data buffer
+//     size_t len, // Data buffer length
+//     void* _pt // Optional state arg
+// )
+// {
+//     struct ak_passthrough* pt = _pt;
 
-    uint8_t* dec = malloc(len);
-    aes128CtrCrypt(&pt->enc, dec, buf, len);
+//     uint8_t* dec = malloc(len);
+//     aes128CtrCrypt(&pt->enc, dec, buf, len);
 
-    printf("%c%c%c%c\n", dec[0], dec[1], dec[2], dec[3]);
+//     fwrite(dec, sizeof(uint8_t), len, pt->file);
 
-    return 0;
-}
+//     free(dec);
 
-int test_audiokey_response_handler(audiokey_ctx* audiokey, uint8_t* _key, size_t len, void* _pt)
-{
-    struct ak_passthrough* pt = _pt;
+//     return 0;
+// }
+
+// int test_fetch_end_handler(
+//     struct fetch_ctx* ctx, // The Fetch context the response originates from
+//     struct fetch_pending_request* req,
+//     void* _pt // Optional state arg
+// )
+// {
+//     struct ak_passthrough* pt = _pt;
+
+//     fclose(pt->file);
+//     log_info("closed file!\n");
+//     consoleUpdate(NULL);
+
+//     return 0;
+// }
+
+// int test_audiokey_response_handler(audiokey_ctx* audiokey, uint8_t* _key, size_t len, void* _pt)
+// {
+//     struct ak_passthrough* pt = _pt;
     
-    uint8_t* key = malloc(len);
-    memcpy(key, _key, len);
+//     uint8_t* key = malloc(len);
+//     memcpy(key, _key, len);
 
-    uint8_t ctr[0x10];
-    memset(ctr, 0, 0x10);
+//     uint8_t ctr[0x10] = {0x72, 0xe0, 0x67, 0xfb, 0xdd, 0xcb, 0xcf, 0x77, 0xeb, 0xe8, 0xbc, 0x64, 0x3f, 0x63, 0x0d, 0x93};
+//     aes128CtrContextCreate(&pt->enc, key, ctr);
 
-    aes128CtrContextCreate(&pt->enc, key, ctr);
+//     pt->file = fopen("/dump.ogg", "wb");
+//     log_info("opened file! %p\n", pt->file);
+//     consoleUpdate(NULL);
 
-    channelmgr_channel_allocate(channelmgr, NULL, test_channelmgr_data_handler, NULL, pt);
+//     fetch_stream(
+//         fetch,
+//         pt->fileid,
+//         0, FETCH_MAX_BLOCKS,
+//         test_fetch_data_handler,
+//         test_fetch_end_handler,
+//         pt
+//     );
 
-    return 0;
-}
+//     return 0;
+// }
 
 int test_mercury_request_handler(mercury_ctx* mercury, Header* header, mercury_message_part* parts, void* _)
 {
@@ -201,14 +249,8 @@ int test_mercury_request_handler(mercury_ctx* mercury, Header* header, mercury_m
     spotify_file_id_to_b16(file_id, sfid);
     printf("[Best] File %s: format = %d\n", file_id, bestSupported->format);
 
-    struct ak_passthrough* pt = malloc(sizeof(struct ak_passthrough));
-    pt->fileid = sfid;
-    pt->trackid = trackid;
-
-    if (audiokey_request(audiokey, trackid, sfid, test_audiokey_response_handler, pt) < 0)
-    {
+    if (audiofetch_create(audiofetch, trackid, sfid, NULL, NULL) == NULL)
         return -1;
-    }
 
     return 0;
 }
