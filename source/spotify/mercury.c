@@ -286,16 +286,23 @@ skip_handler:
         }
 
         // Remove message from pending message list
-        mercury_pending_message* mptr = ctx->messages;
-        while (mptr != NULL)
+        if (ctx->messages == msg)
         {
-            if (mptr->next == msg)
+            ctx->messages = msg->next;
+        }
+        else
+        {
+            mercury_pending_message* mptr = ctx->messages;
+            while (mptr != NULL)
             {
-                mptr->next = mptr->next->next;
-                break;
-            }
+                if (mptr->next == msg)
+                {
+                    mptr->next = mptr->next->next;
+                    break;
+                }
 
-            mptr = mptr->next;
+                mptr = mptr->next;
+            }
         }
 
         // Free message
