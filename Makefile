@@ -41,7 +41,7 @@ TARGET		:=	switchspot
 BUILD		:=	build
 SOURCES		:=	source source/proto source/protobuf-c source/cJSON source/shannon source/dh source/mini-gmp source/spotify source/spotify/proto source/conv
 DATA		:=	data
-INCLUDES	:=	include
+INCLUDES	:=	include include/ogg include/vorbis
 #ROMFS	:=	romfs
 APP_TITLE	:=	SwitchSpot
 APP_AUTHOR	:=	mogery
@@ -62,13 +62,13 @@ CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
-LIBS	:= -lm -lnx
+LIBS	:= -lm -lnx -logg -lvorbis
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:= $(PORTLIBS) $(LIBNX)
+LIBDIRS	:= $(PORTLIBS) $(LIBNX) $(CURDIR)/lib/ogg $(CURDIR)/lib/vorbis
 
 
 #---------------------------------------------------------------------------------

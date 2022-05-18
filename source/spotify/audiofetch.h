@@ -5,7 +5,6 @@
 #include "fetch.h"
 #include "audiokey.h"
 #include "idtool.h"
-#include "stb_vorbis.h"
 
 #ifndef _audiofetch_H
 #define _audiofetch_H
@@ -45,7 +44,8 @@ struct audiofetch_request {
     Aes128CtrContext enc;
 
     fetch_pending_request* fetch;
-    stb_vorbis* vorbis;
+    //stb_vorbis* vorbis;
+    void* vorbis;
 
     uint8_t* fbuf;
     size_t flen;

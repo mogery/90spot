@@ -40,45 +40,45 @@ int audiofetch_fetch_data_handler(fetch_ctx* fetch, fetch_pending_request* freq,
     {
         int datablock_memory_consumed, error;
 
-        stb_vorbis* try = stb_vorbis_open_pushdata(
-            req->fbuf,
-            req->flen,
-            &datablock_memory_consumed,
-            &error,
-            NULL
-        );
+        // stb_vorbis* try = stb_vorbis_open_pushdata(
+        //     req->fbuf,
+        //     req->flen,
+        //     &datablock_memory_consumed,
+        //     &error,
+        //     NULL
+        // );
 
-        if (try == NULL)
-        {
-            if (error == VORBIS_need_more_data)
-            {
-                log_info("[AUDIOFETCH] Needs more data...\n");
-            }
-            else
-            {
-                log_error("[AUDIOFETCH] VORBIS error %i\n", error);
-                return -1;
-            }
-        }
-        else
-            req->vorbis = try;
+        // if (try == NULL)
+        // {
+        //     if (error == VORBIS_need_more_data)
+        //     {
+        //         log_info("[AUDIOFETCH] Needs more data...\n");
+        //     }
+        //     else
+        //     {
+        //         log_error("[AUDIOFETCH] VORBIS error %i\n", error);
+        //         return -1;
+        //     }
+        // }
+        // else
+        //     req->vorbis = try;
     }
     
     if (req->vorbis != NULL)
     {
-        int bytes_used, samples_output;
+        int bytes_used = 0, samples_output = 0;
         while (true)
         {
-            int channels;
-            float** output;
+            int channels = 0;
+            float** output = NULL;
 
-            bytes_used = stb_vorbis_decode_frame_pushdata(
-                req->vorbis,
-                req->fbuf, req->flen,
-                &channels,
-                &output,
-                &samples_output
-            );
+            // bytes_used = stb_vorbis_decode_frame_pushdata(
+            //     req->vorbis,
+            //     req->fbuf, req->flen,
+            //     &channels,
+            //     &output,
+            //     &samples_output
+            // );
 
             log_info("[AUDIOFETCH] Bytes: %i Samples: %i Channels: %i\n", bytes_used, samples_output, channels);
 

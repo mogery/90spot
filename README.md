@@ -7,6 +7,8 @@ We use the following libraries:
  * [protobuf-c](https://github.com/protobuf-c/protobuf-c) by Dave Benson and [the protobuf-c authors](https://github.com/protobuf-c/protobuf-c/graphs/contributors). Licensed under [BSD-2.0](https://github.com/protobuf-c/protobuf-c/blob/master/LICENSE).
  * [gmp-mini](https://gmplib.org/) by [GMP contributors](https://gmplib.org/manual/Contributors). Licensed under GPL-2.0 or newer.
  * [shannon](https://web.archive.org/web/20080719073929/http://www.qualcomm.com.au/PublicationsDocs/Shannon-1.0.tgz) by Qualcomm International. Licensed under Apache-1.1.
+ * [libogg](https://github.com/xiph/ogg) (via binary) by the [Xiph.org Foundation](https://xiph.org/). Licensed under [BSD-2.0](https://github.com/xiph/ogg/blob/master/COPYING).
+ * [libvorbis](https://github.com/xiph/vorbis) (via binary + headers) by the [Xiph.org Foundation](https://xiph.org/). Licensed under [BSD-2.0](https://github.com/xiph/vorbis/blob/master/COPYING).
 
 Protobuf files found in `source/proto` are compiled with `protoc-c` of the [protobuf-c](https://github.com/protobuf-c/protobuf-c) project by Dave Benson and [the protobuf-c authors](https://github.com/protobuf-c/protobuf-c/graphs/contributors), licensed under [BSD-2.0](https://github.com/protobuf-c/protobuf-c/blob/master/LICENSE). The protobuf files originate from the [librespot](https://github.com/librespot-org/librespot) project by [Paul Lietar](https://github.com/plietar) and [librespot contributors](https://github.com/librespot-org/librespot/graphs/contributors), licensed under [MIT](https://github.com/librespot-org/librespot/blob/dev/LICENSE).
 

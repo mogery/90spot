@@ -17,7 +17,6 @@
 #include "conv.h"
 #include "log.h"
 #include "secrets.h"
-#include "stb_vorbis.h"
 #include "spotify/apresolve.h"
 #include "spotify/handshake.h"
 #include "spotify/session.h"
