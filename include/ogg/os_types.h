@@ -151,7 +151,7 @@
 
 #else
 
-#  include <ogg/config_types.h>
+#  include "ogg/config_types.h"
 
 #endif
 
