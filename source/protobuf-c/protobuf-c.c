@@ -45,7 +45,7 @@
  * \todo Use size_t consistently.
  */
 
-#include "log.h" // THIS LINE WAS ADDED BY SWITCHSPOT CONTRIBUTORS
+#include "log.h" // THIS LINE WAS ADDED BY 90SPOT CONTRIBUTORS
 #include <stdlib.h>	/* for malloc, free */
 #include <string.h>	/* for strcmp, strlen, memcpy, memmove, memset */
 
@@ -82,7 +82,7 @@
 #define MAX_UINT64_ENCODED_SIZE		10
 
 #ifndef PROTOBUF_C_UNPACK_ERROR
-// THE FOLLOWING LINES (until the first #endif) WERE MODIFIED BY SWITCHSPOT CONTRIBUTORS
+// THE FOLLOWING LINES (until the first #endif) WERE MODIFIED BY 90SPOT CONTRIBUTORS
 #define PROTOBUF_C_UNPACK_ERROR(...) {\
 	log_error("[PROTERR] " __VA_ARGS__);\
 	log_error("\n"); /* todo: is there any better way? :( */ \

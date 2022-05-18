@@ -66,12 +66,12 @@ void shn_decrypt(shn_ctx *c, UCHAR *buf, int nbytes);	/* decrypt + MAC */
 void shn_finish(shn_ctx *c, UCHAR *buf, int nbytes);	/* finalise MAC */
 
 /*
- * NOTE: The following code has been added by SwitchSpot contributors,
+ * NOTE: The following code has been added by 90spot contributors,
  * and it is not part of the original shannon reference implementation.
  */
 
 void shn_nonce_u32(shn_ctx *c, uint32_t nonce); /* set Init Vector using a u32 value */
 
-/* End of code added by SwitchSpot contributors. */
+/* End of code added by 90spot contributors. */
 
 #endif /* _SHN_DEFINED */

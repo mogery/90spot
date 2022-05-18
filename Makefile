@@ -37,13 +37,13 @@ include $(DEVKITPRO)/libnx/switch_rules
 #   of a homebrew executable (.nro). This is intended to be used for sysmodules.
 #   NACP building is skipped as well.
 #---------------------------------------------------------------------------------
-TARGET		:=	switchspot
+TARGET		:=	90spot
 BUILD		:=	build
 SOURCES		:=	source source/proto source/protobuf-c source/cJSON source/shannon source/dh source/mini-gmp source/spotify source/spotify/proto source/conv
 DATA		:=	data
 INCLUDES	:=	include
 #ROMFS	:=	romfs
-APP_TITLE	:=	SwitchSpot
+APP_TITLE	:=	90spot
 APP_AUTHOR	:=	mogery
 APP_VERSION	:=	0.0.1
 
@@ -55,7 +55,7 @@ ARCH	:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 CFLAGS	:=	-g -Wall -Wno-unknown-pragmas -O2 -ffunction-sections \
 			$(ARCH) $(DEFINES)
 
-CFLAGS	+=	$(INCLUDE) -D__SWITCH__ -DSWITCHSPOT_VERSION='"$(APP_VERSION)"'
+CFLAGS	+=	$(INCLUDE) -D__SWITCH__ -D_90SPOT_VERSION='"$(APP_VERSION)"'
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions
 

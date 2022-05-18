@@ -202,9 +202,9 @@ int main(int argc, char* argv[])
     time_t unixTime = time(NULL);
 
     char logfile_name[257];
-    snprintf(logfile_name, 256, "/switchspot_%ld.log", unixTime);
+    snprintf(logfile_name, 256, "/90spot_%ld.log", unixTime);
 
-    // Create switchspot.log file on the root of the SD card and copy stdout to it
+    // Create 90spot.log file on the root of the SD card and copy stdout to it
     int logfd = open(logfile_name, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (logfd == -1)
     {
@@ -222,11 +222,10 @@ int main(int argc, char* argv[])
 
     socketInitializeDefault();
 
-    _log("\x1b[32m", "SwitchSpot %s\n", SWITCHSPOT_VERSION);
-    log_info("Bootstrapping.\n\n");
-
+    _log("\x1b[32m", "90spot %s\n", _90SPOT_VERSION);
     struct tm* timeStruct = localtime((const time_t *)&unixTime);
-    log_info("%i. %02i. %02i. %02i:%02i:%02i\n\n", timeStruct->tm_year + 1900, timeStruct->tm_mon + 1, timeStruct->tm_mday, timeStruct->tm_hour, timeStruct->tm_min, timeStruct->tm_sec);
+    log_info("%i. %02i. %02i. %02i:%02i:%02i\n", timeStruct->tm_year + 1900, timeStruct->tm_mon + 1, timeStruct->tm_mday, timeStruct->tm_hour, timeStruct->tm_min, timeStruct->tm_sec);
+    log_info("Bootstrapping...\n\n");
 
     log_debug("[PROTOBUF] Version: %s\n", protobuf_c_version());
     consoleUpdate(NULL);
