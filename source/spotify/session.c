@@ -68,7 +68,7 @@ int session_message_handler(session_ctx* ctx, uint8_t cmd, uint8_t* buf, uint16_
 
 int session_announce_message(session_ctx* ctx, uint8_t cmd, uint8_t* buf, uint16_t len)
 {
-    log_debug("[SESSION] Received command 0x%02X with a %d-long buffer\n", cmd, len);
+    //log_debug("[SESSION] Received command 0x%02X with a %d-long buffer\n", cmd, len);
 
     session_message_listener_entry* ptr = ctx->listeners;
     session_message_listener_entry* next = NULL;
@@ -158,7 +158,7 @@ int session_update(session_ctx* ctx)
 
             ctx->parser.cmd = header[0];
             ctx->parser.size = conv_b2u16(header + 1) + SESSION_MAC_SIZE;
-            log_debug("[SESSION] Receiving message (cmd 0x%02X) of size %d\n", ctx->parser.cmd, ctx->parser.size);
+            //log_debug("[SESSION] Receiving message (cmd 0x%02X) of size %d\n", ctx->parser.cmd, ctx->parser.size);
 
             ctx->parser.pile = malloc(ctx->parser.size);
             ctx->parser.pile_len = 0;
