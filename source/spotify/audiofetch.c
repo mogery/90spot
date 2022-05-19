@@ -20,7 +20,7 @@ int audiofetch_fetch_data_handler(fetch_ctx* fetch, fetch_pending_request* freq,
 {
     audiofetch_request* req = _req;
 
-    uint8_t* ogg_buf = ogg_sync_buffer(&req->ogg_sync, len);
+    uint8_t* ogg_buf = (uint8_t*)ogg_sync_buffer(&req->ogg_sync, len);
     if (ogg_buf == NULL)
     {
         log_error("[AUDIOFETCH] failed to allocate ogg_buf :(\n");
@@ -108,7 +108,7 @@ int audiofetch_fetch_data_handler(fetch_ctx* fetch, fetch_pending_request* freq,
                 float** samples;
                 int sample_cnt = vorbis_synthesis_pcmout(&req->vorb_dsp, &samples);
 
-                int samples_used = req->frame_handler(req->ctx, req, samples, sample_cnt, req->vorb_info.channels, req->handler_state);
+                int samples_used = req->frame_handler(req->ctx, req, samples, sample_cnt, req->vorb_info.channels, packet.e_o_s != 0, req->handler_state);
                 if (samples_used < 0)
                     return -1;
 
@@ -148,10 +148,12 @@ int audiofetch_audiokey_response_handler(audiokey_ctx* audiokey, uint8_t* key, s
     spotify_id_to_b62(track_str, req->track);
     log_info("[AUDIOFETCH] Received key for track %s! Doing initial fetch...\n", track_str);
 
+    req->last_fetch = 1024 * 1024 / FETCH_BLOCK_SIZE;
+
     req->fetch = fetch_stream(
         req->ctx->fetch,
         req->file,
-        0, 1024 * 16 / FETCH_BLOCK_SIZE,
+        0, req->last_fetch,
         audiofetch_fetch_data_handler,
         audiofetch_fetch_end_handler,
         req
@@ -201,6 +203,28 @@ audiofetch_request* audiofetch_create(
     req->next = ctx->requests;
     ctx->requests = req;
     return req;
+}
+
+int audiofetch_fetch(audiofetch_request* req, int blocks)
+{
+    if (blocks > FETCH_MAX_BLOCKS)
+    {
+        log_warn("[AUDIOFETCH] Requested block count %d is bigger than the maximum blocks one fetch can return (%d). Limiting...\n", blocks, FETCH_MAX_BLOCKS);
+        blocks = FETCH_MAX_BLOCKS;
+    }
+
+    req->fetch = fetch_stream(
+        req->ctx->fetch,
+        req->file,
+        req->last_fetch, req->last_fetch + blocks,
+        audiofetch_fetch_data_handler,
+        audiofetch_fetch_end_handler,
+        req
+    );
+
+    req->last_fetch += blocks;
+
+    return 0;
 }
 
 void audiofetch_destroy(audiofetch_ctx* ctx)

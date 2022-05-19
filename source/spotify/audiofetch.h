@@ -36,6 +36,7 @@ typedef int (*audiofetch_frame_handler)(
     float** samples, // Samples of each channel
     int count, // Number of samples (per channel)
     int channels, // Number of channels
+    bool is_eos, // Is this frame the end of the stream?
     void* state // Optional state arg
 );
 
@@ -55,6 +56,8 @@ struct audiofetch_request {
     Aes128CtrContext enc;
 
     fetch_pending_request* fetch;
+
+    int last_fetch;
 
     ogg_sync_state ogg_sync;
     ogg_stream_state ogg_stream;
@@ -78,6 +81,7 @@ typedef struct audiofetch_request audiofetch_request;
 
 audiofetch_ctx* audiofetch_init(fetch_ctx* fetch, audiokey_ctx* audiokey);
 audiofetch_request* audiofetch_create(audiofetch_ctx* ctx, spotify_id track, spotify_file_id file, audiofetch_end_handler end_handler, audiofetch_header_handler header_handler, audiofetch_frame_handler frame_handler, void* state);
+int audiofetch_fetch(audiofetch_request* req, int blocks);
 void audiofetch_destroy(audiofetch_ctx* ctx);
 
 #endif
