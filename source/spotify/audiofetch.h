@@ -22,6 +22,14 @@ struct audiofetch_ctx {
 };
 
 // Return <0 for an error.
+
+typedef int (*audiofetch_header_handler)(
+    struct audiofetch_ctx* ctx, // The Fetch context the response originates from
+    struct audiofetch_request* req, // The Fetch request the response originates from
+    vorbis_info info,
+    void* state // Optional state arg
+);
+
 typedef int (*audiofetch_frame_handler)(
     struct audiofetch_ctx* ctx, // The Fetch context the response originates from
     struct audiofetch_request* req, // The Fetch request the response originates from
@@ -57,7 +65,9 @@ struct audiofetch_request {
     bool vorbis_started;
     int vorb_packet_cnt;
 
+    audiofetch_header_handler header_handler;
     audiofetch_frame_handler frame_handler;
+    audiofetch_end_handler end_handler;
     void* handler_state;
 
     struct audiofetch_request* next;
@@ -67,7 +77,7 @@ typedef struct audiofetch_ctx audiofetch_ctx;
 typedef struct audiofetch_request audiofetch_request;
 
 audiofetch_ctx* audiofetch_init(fetch_ctx* fetch, audiokey_ctx* audiokey);
-audiofetch_request* audiofetch_create(audiofetch_ctx* ctx, spotify_id track, spotify_file_id file, audiofetch_frame_handler frame_handler, void* state);
+audiofetch_request* audiofetch_create(audiofetch_ctx* ctx, spotify_id track, spotify_file_id file, audiofetch_end_handler end_handler, audiofetch_header_handler header_handler, audiofetch_frame_handler frame_handler, void* state);
 void audiofetch_destroy(audiofetch_ctx* ctx);
 
 #endif

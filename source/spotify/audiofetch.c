@@ -72,6 +72,10 @@ int audiofetch_fetch_data_handler(fetch_ctx* fetch, fetch_pending_request* freq,
                 if (req->vorb_packet_cnt == 3)
                 {
                     log_info("[AUDIOFETCH] Headers received! Initializing Vorbis DSP...\n");
+
+                    if (req->header_handler && req->header_handler(req->ctx, req, req->vorb_info, req->handler_state) < 0)
+                        return -1;
+
                     if (vorbis_synthesis_init(&req->vorb_dsp, &req->vorb_info) != 0)
                     {
                         log_error("[AUDIOFETCH] failed to initialize Vorbis DSP :(");
@@ -127,7 +131,8 @@ int audiofetch_fetch_end_handler(fetch_ctx* fetch, fetch_pending_request* freq, 
 {
     audiofetch_request* req = _req;
 
-    log_info("[AUDIOFETCH] Fetch ended!\n");
+    if (req->end_handler && req->end_handler(req->ctx, req, req->handler_state) < 0)
+        return -1;
     
     return 0;
 }
@@ -159,6 +164,8 @@ audiofetch_request* audiofetch_create(
     audiofetch_ctx* ctx,
     spotify_id track,
     spotify_file_id file,
+    audiofetch_end_handler end_handler,
+    audiofetch_header_handler header_handler,
     audiofetch_frame_handler frame_handler,
     void* state
 )
@@ -180,6 +187,8 @@ audiofetch_request* audiofetch_create(
     req->vorb_packet_cnt = 0;
     req->vorbis_started = false;
 
+    req->end_handler = end_handler;
+    req->header_handler = header_handler;
     req->frame_handler = frame_handler;
     req->handler_state = state;
 
