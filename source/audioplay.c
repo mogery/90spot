@@ -126,10 +126,25 @@ int audioplay_audiofetch_header_handler(audiofetch_ctx* audiofetch, audiofetch_r
 
 int audioplay_audiofetch_frame_handler(audiofetch_ctx* audiofetch, audiofetch_request* req, float** samples, int count, int channels, bool is_eos, void* _track)
 {
+    if (count == 0) // if PCM frame is empty, don't bother
+        return count;
+
     audioplay_track* track = _track;
 
     audioplay_sampile* pile = malloc(sizeof(audioplay_sampile));
+    if (pile == NULL)
+    {
+        log_error("[AUDIOPLAY] Failed to allocate sampile struct!\n");
+        return -1;
+    }
+
     pile->buf = malloc(count * channels * sizeof(uint16_t));
+    if (pile->buf == NULL)
+    {
+        log_error("[AUDIOPLAY] Failed to allocate sampile buffer!\n");
+        return -1;
+    }
+
     pile->samples = count * channels;
     pile->next = NULL;
 
@@ -181,6 +196,7 @@ int audioplay_track_create(audioplay_ctx* ctx, spotify_id track_id, spotify_file
     track->has_info = false;
     track->is_busy = true;
     track->is_ending = false;
+    track->sampiles = NULL;
 
     audiofetch_request* req = audiofetch_create(ctx->audiofetch, track_id, file_id, audioplay_audiofetch_end_handler, audioplay_audiofetch_header_handler, audioplay_audiofetch_frame_handler, track);
     if (req == NULL)
