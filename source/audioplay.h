@@ -6,7 +6,7 @@
 #include "spotify/idtool.h"
 #include "spotify/audiokey.h"
 #include "spotify/audiofetch.h"
-#include "vorbis/codec.h"
+#include <vorbis/codec.h>
 
 #define AUDIOPLAY_WAVEBUF_COUNT 2 // default wavebuf count
 #define AUDIOPLAY_WAVEBUF_DEF_RATE 48000 // default wavebuf sample rate

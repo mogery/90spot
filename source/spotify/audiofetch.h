@@ -5,8 +5,8 @@
 #include "fetch.h"
 #include "audiokey.h"
 #include "idtool.h"
-#include "ogg/ogg.h"
-#include "vorbis/codec.h"
+#include <ogg/ogg.h>
+#include <vorbis/codec.h>
 
 #ifndef _audiofetch_H
 #define _audiofetch_H
