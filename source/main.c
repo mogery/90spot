@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <netdb.h>
 #include <sys/types.h>
@@ -9,6 +10,8 @@
 #include <unistd.h>
 #include <errno.h>
 #include <malloc.h>
+
+#include "main.h"
 
 #include <switch/crypto/aes_ctr.h>
 #include <switch/services/set.h>
@@ -28,9 +31,11 @@
 #include "spotify/fetch.h"
 #include "spotify/audiofetch.h"
 #include "audioplay.h"
+#include "graphics.h"
 
 #include "spotify/proto/metadata.pb-c.h"
 
+bool gfx_inited = false;
 session_ctx* session = NULL;
 mercury_ctx* mercury = NULL;
 audiokey_ctx* audiokey = NULL;
@@ -61,17 +66,20 @@ void cleanup()
 
     if (session != NULL)
         session_destroy(session);
+    
+    gfx_clean();
 
     audioplay_svc_cleanup();
     socketExit();
     setsysExit();
-    consoleExit(NULL);
+    romfsExit();
+    // consoleExit(NULL);
 }
 
 void NORETURN panic()
 {
     log_info("\n\n[!] panic() called: press + button to exit gracefully\n");
-    consoleUpdate(NULL);
+    // consoleUpdate(NULL);
 
     PadState pad;
     padInitializeDefault(&pad);
@@ -133,40 +141,40 @@ void authentication_handler(session_ctx* session, bool success)
 int test_mercury_request_handler(mercury_ctx* mercury, Header* header, mercury_message_part* parts, void* _)
 {
     log_info("Request handler called!\n");
-    consoleUpdate(NULL);
+    // consoleUpdate(NULL);
 
     if (header->status_code >= 300)
     {
         log_error("Bad status code! Halting.");
-        consoleUpdate(NULL);
+        // consoleUpdate(NULL);
         return -1;
     }
 
     if (parts == NULL)
     {
         log_error("Received no parts! Halting.");
-        consoleUpdate(NULL);
+        // consoleUpdate(NULL);
         return -1;
     }
 
     log_info("1st part: #%p, len %d\n", parts->buf, parts->len);
-    consoleUpdate(NULL);
+    // consoleUpdate(NULL);
 
     Track* track = track__unpack(NULL, parts->len, parts->buf);
     if (track == NULL)
     {
         log_error("Failed to unpack Track!\n");
-        consoleUpdate(NULL);
+        // consoleUpdate(NULL);
         return -1;
     }
 
     log_info("Track unpacked!\n");
-    consoleUpdate(NULL);
+    // consoleUpdate(NULL);
 
     spotify_id trackid = spotify_id_from_raw(track->gid.data, SAT_Track);
 
     log_info("%s - %s\n", track->artist[0]->name, track->name);
-    consoleUpdate(NULL);
+    // consoleUpdate(NULL);
 
     AudioFile* bestSupported = NULL;
 
@@ -194,12 +202,26 @@ int test_mercury_request_handler(mercury_ctx* mercury, Header* header, mercury_m
     return 0;
 }
 
+void authenticate(char* username, char* password)
+{
+    // Authenticate session
+    if (session_authenticate(session, username, password, authentication_handler) < 0)
+        panic();
+}
+
 int main(int argc, char* argv[])
 {
     appletLockExit();
 
-    consoleInit(NULL);
+    // consoleInit(NULL);
+    romfsInit();
     setsysInitialize();
+    socketInitializeDefault();
+
+    nxlinkStdio();
+
+    if (gfx_init() < 0)
+        panic();
 
     time_t unixTime = time(NULL);
 
@@ -222,45 +244,38 @@ int main(int argc, char* argv[])
     PadState pad;
     padInitializeDefault(&pad);
 
-    socketInitializeDefault();
-
     _log("\x1b[32m", "90spot %s\n", _90SPOT_VERSION);
     struct tm* timeStruct = localtime((const time_t *)&unixTime);
     log_info("%i. %02i. %02i. %02i:%02i:%02i\n", timeStruct->tm_year + 1900, timeStruct->tm_mon + 1, timeStruct->tm_mday, timeStruct->tm_hour, timeStruct->tm_min, timeStruct->tm_sec);
     log_info("Bootstrapping...\n\n");
 
     log_debug("[PROTOBUF] Version: %s\n", protobuf_c_version());
-    consoleUpdate(NULL);
+    // consoleUpdate(NULL);
 
     if (!audioplay_svc_init())
         panic();
     
     dh_init();
     dh_keys keys = dh_keygen();
-    consoleUpdate(NULL);
+    // consoleUpdate(NULL);
 
     // Resolve a Spotify Access Point
     struct sockaddr_in* ap = apresolve();
     if (ap == NULL)
         panic();
-    consoleUpdate(NULL);
+    // consoleUpdate(NULL);
 
     // Handshake with AP
     hs_res* handshake = spotify_handshake(ap, keys);
     if (handshake == NULL)
         panic();
-    consoleUpdate(NULL);
+    // consoleUpdate(NULL);
 
     // Initialize session from handshake data & socket
     session = session_init(handshake);
     if (session == NULL)
         panic();
-    consoleUpdate(NULL);
-
-    // Authenticate session
-    if (session_authenticate(session, SPOTIFY_USERNAME, SPOTIFY_PASSWORD, authentication_handler) < 0)
-        panic();
-    consoleUpdate(NULL);
+    // consoleUpdate(NULL);
 
     bool sent = false;
 
@@ -274,14 +289,11 @@ int main(int argc, char* argv[])
         // newly pressed in this frame compared to the previous one
         u64 kDown = padGetButtonsDown(&pad);
 
-        if (kDown & HidNpadButton_Plus)
-            break; // break in order to return to hbmenu
-
         if (kDown & HidNpadButton_A && !sent)
         {
             sent = true;
             log_info("Sending mercury GET\n");
-            consoleUpdate(NULL);
+            // consoleUpdate(NULL);
 
             spotify_id track_id = spotify_id_from_b62("08auB3LvJQJcasevC2nkPc", SAT_Track);
             char track_id_b16[SPOTIFY_ID_B16_LENGTH + 1];
@@ -294,7 +306,7 @@ int main(int argc, char* argv[])
             {
                 panic();
             }
-            consoleUpdate(NULL);
+            // consoleUpdate(NULL);
         }
 
         if (session_update(session) < 0)
@@ -303,7 +315,12 @@ int main(int argc, char* argv[])
         if (audioplay != NULL && audioplay_update(audioplay) < 0)
             panic();
 
-        consoleUpdate(NULL);
+        // consoleUpdate(NULL);
+        int gfx_res = gfx_update();
+        if (gfx_res < 0)
+            panic();
+        if (gfx_res == 1)
+            break;
     }
 
     cleanup();
