@@ -1,8 +1,11 @@
-#include "graphics.h"
-#include "SDL2_gfx/SDL2_gfxPrimitives.h"
+#include "graphics.hpp"
+extern "C"
+{
+    #include "spotifymgr.h"
+}
 #include <switch/display/native_window.h>
 #include "log.h"
-#include "gfx_scenes/gfx_scenes.h"
+#include "hola_scenes/hola_scene_auth.hpp"
 
 #define GFX_CHECK_FONT_LOAD(font) { \
     if (font == NULL) \
@@ -15,11 +18,11 @@
 SDL_Window* window = NULL;
 SDL_Renderer* renderer = NULL;
 
-FontPile fonts;
-GSC_Screen current_screen = GSC_LOGIN;
-
 int gfx_init()
 {
+    HolaFontPile* fonts = hola_get_font_pile_ref();
+    
+    log_info("[GFX] Initializing...\n");
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) < 0)
     {
         log_error("[GRAPHICS] Failed to initialize SDL: %s\n", SDL_GetError());
@@ -55,13 +58,31 @@ int gfx_init()
         goto _fail_sdl;
     }
 
-    fonts.inter36regular = TTF_OpenFontIndex("romfs:/fonts/Inter-Regular.ttf", 36, 0);
-    GFX_CHECK_FONT_LOAD(fonts.inter36regular);
-    fonts.inter36bold = TTF_OpenFontIndex("romfs:/fonts/Inter-Bold.ttf", 36, 0);
-    GFX_CHECK_FONT_LOAD(fonts.inter36bold);
-    fonts.inter48bold = TTF_OpenFontIndex("romfs:/fonts/Inter-Bold.ttf", 48, 0);
-    GFX_CHECK_FONT_LOAD(fonts.inter48bold);
+    log_info("[GFX] Loading fonts...\n");
 
+    fonts->sans_regular36 = TTF_OpenFontIndex("romfs:/fonts/Inter-Regular.ttf", 36, 0);
+    GFX_CHECK_FONT_LOAD(fonts->sans_regular36);
+    fonts->sans_bold36 = TTF_OpenFontIndex("romfs:/fonts/Inter-Bold.ttf", 36, 0);
+    GFX_CHECK_FONT_LOAD(fonts->sans_bold36);
+    fonts->sans_bold48 = TTF_OpenFontIndex("romfs:/fonts/Inter-Bold.ttf", 48, 0);
+    GFX_CHECK_FONT_LOAD(fonts->sans_bold48);
+
+    int w, h;
+    SDL_GetWindowSize(window, &w, &h);
+
+    hola_set_scene(new HolaSceneAuth(
+        (HolaRect){
+            (HolaCoords){
+                HOLA_ANCHOR_TOP_LEFT,
+                0, 0
+            },
+            (HolaDimensions){
+                w, h
+            }
+        }
+    ));
+
+    log_info("[GFX] Done!\n");
     return 0;
 
 _fail_ttf:
@@ -94,29 +115,25 @@ int gfx_update()
                 break;
 
             case SDL_FINGERDOWN:
-                int x = (int)(event.tfinger.x * 1920.0f), y = (int)(event.tfinger.y * 1080.0f);
-                log_info("Finger down at x: %d y: %d\n", x, y);
+                {
+                    int x = (int)(event.tfinger.x * 1920.0f), y = (int)(event.tfinger.y * 1080.0f);
+                    log_info("Finger down at x: %d y: %d\n", x, y);
 
-                int touch_res = 0;
-                if (current_screen == GSC_LOGIN)
-                    touch_res = gsc_login_handle_touch(window, renderer, fonts, x, y);
-
-                if (touch_res < 0)
-                    return touch_res;
-                break;
+                    if (hola_interact((HolaInteraction){
+                        HOLA_INTERACTION_TOUCH,
+                        (HolaNormalCoord){ x, y }
+                    }) < 0)
+                        return -1;
+                    break;
+                }
 
             default:
                 break;
         }
     }
 
-    int draw_res = 0;
-
-    if (current_screen == GSC_LOGIN)
-        draw_res = gsc_login_draw(window, renderer, fonts);
-
-    if (draw_res < 0)
-        return draw_res;
+    if (hola_update(renderer) < 0)
+        return -1;
 
     SDL_RenderPresent(renderer);
 
@@ -125,6 +142,8 @@ int gfx_update()
 
 void gfx_clean()
 {
+    hola_clear_scene();
+
     if (TTF_WasInit())
         TTF_Quit();
 
@@ -135,35 +154,4 @@ void gfx_clean()
         SDL_DestroyWindow(window);
     
     SDL_Quit();
-}
-
-// Utilities
-
-int gfx_text_draw(SDL_Renderer* renderer, TTF_Font* font, char* text, SDL_Color color, SDL_Rect* srcrect, SDL_Rect* dstrect)
-{
-    SDL_Surface* text_surface;
-    SDL_Texture* text_texture;
-
-    if ((text_surface = TTF_RenderText_Blended(font, text, color)) == NULL)
-    {
-        log_error("[GRAPHICS] Couldn't render text \"%s\": %s\n", text, TTF_GetError());
-        return -1;
-    }
-
-    if ((text_texture = SDL_CreateTextureFromSurface(renderer, text_surface)) == NULL)
-    {
-        log_error("[GRAPHICS] Failed to convert text surface to texture: %s\n", SDL_GetError());
-        return -1;
-    }
-
-    if (SDL_RenderCopy(renderer, text_texture, srcrect, dstrect) < 0)
-    {
-        log_error("[GRAPHICS] Failed to render text texture: %s\n", SDL_GetError());
-        return -1;
-    }
-
-    SDL_DestroyTexture(text_texture);
-    SDL_FreeSurface(text_surface);
-
-    return 0;
 }

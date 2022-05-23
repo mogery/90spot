@@ -253,7 +253,7 @@ hs_res* spotify_handshake(struct sockaddr_in *ap, dh_keys keys)
         goto cleanup;
     }
 
-    uint8_t* public_key_bytes = mpz2buf(NULL, keys.public);
+    uint8_t* public_key_bytes = mpz2buf(NULL, keys.pub);
 
     socket_desc = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_desc == -1)
@@ -288,7 +288,7 @@ hs_res* spotify_handshake(struct sockaddr_in *ap, dh_keys keys)
 
     // Derive shared DH key using local and remote keys
     mpz_t shared_key;
-    dh_shared_key(&shared_key, remote_key, keys.private);
+    dh_shared_key(&shared_key, remote_key, keys.priv);
 
     size_t shared_key_len = 0;
     uint8_t* shared_key_buf = mpz2buf(&shared_key_len, shared_key);

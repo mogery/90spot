@@ -26,14 +26,14 @@ dh_keys dh_keygen()
 {
     dh_keys keys;
 
-    mpz_init(keys.private);
-    mpz_init(keys.public);
+    mpz_init(keys.priv);
+    mpz_init(keys.pub);
 
     uint8_t buf[DH_SIZE];
     randomGet(buf, DH_SIZE);
-    mpz_import(keys.private, DH_SIZE, 1, 1, 1, 0, buf);
+    mpz_import(keys.priv, DH_SIZE, 1, 1, 1, 0, buf);
 
-    mpz_powm(keys.public, dh_generator, keys.private, dh_prime);
+    mpz_powm(keys.pub, dh_generator, keys.priv, dh_prime);
 
     return keys;
 }

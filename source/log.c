@@ -1,13 +1,13 @@
 #include "log.h"
 
-int logfd = -1;
+FILE* logfd = NULL;
 
-int log_get_fd()
+FILE* log_get_fd()
 {
     return logfd;
 }
 
-void log_set_fd(int fd)
+void log_set_fd(FILE* fd)
 {
     logfd = fd;
 }

@@ -39,7 +39,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	90spot
 BUILD		:=	build
-SOURCES		:=	source codelib/source/protobuf-c codelib/source/cJSON codelib/source/shannon source/dh codelib/source/mini-gmp source/spotify source/spotify/proto source/conv codelib/source/SDL2_gfx source/gfx_scenes
+SOURCES		:=	source codelib/source/protobuf-c codelib/source/cJSON codelib/source/shannon source/dh codelib/source/mini-gmp source/spotify source/spotify/proto source/conv codelib/source/SDL2_gfx source/hola source/hola_scenes
 DATA		:=	data
 INCLUDES	:=	include codelib/include
 ROMFS		:=	romfs

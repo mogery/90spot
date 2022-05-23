@@ -195,8 +195,10 @@ int audioplay_track_create(audioplay_ctx* ctx, spotify_id track_id, spotify_file
     track->file_id = file_id;
     track->has_info = false;
     track->is_busy = true;
+    track->is_playing = false;
     track->is_ending = false;
     track->sampiles = NULL;
+    track->next = NULL;
 
     audiofetch_request* req = audiofetch_create(ctx->audiofetch, track_id, file_id, audioplay_audiofetch_end_handler, audioplay_audiofetch_header_handler, audioplay_audiofetch_frame_handler, track);
     if (req == NULL)
@@ -257,6 +259,7 @@ int audioplay_update(audioplay_ctx* ctx)
         }
 
         audrvVoiceStart(&ctx->audrv, 0);
+        log_info("[AUDIOPLAY] Started voice!\n");
 
         track->is_playing = true;        
     }
@@ -281,6 +284,7 @@ int audioplay_update(audioplay_ctx* ctx)
         if (track->is_ending && all_wavebufs_free)
         {
             audrvVoiceStop(&ctx->audrv, 0);
+            ctx->tracks = track->next;
             goto skip;
         }
         

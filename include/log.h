@@ -8,13 +8,21 @@
 #define LOG_ERROR_SEQ "\x1b[1;31m"
 #define LOG_WARN_SEQ "\x1b[1;33m"
 
-int log_get_fd();
-void log_set_fd(int fd);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+FILE* log_get_fd();
+void log_set_fd(FILE* fd);
+
+#ifdef __cplusplus
+}
+#endif
 
 #define _log(seq, ...) {\
     printf(seq __VA_ARGS__);\
-    if (log_get_fd() != -1) {\
-        dprintf(log_get_fd(), __VA_ARGS__);\
+    if (log_get_fd() != NULL) {\
+        fprintf(log_get_fd(), __VA_ARGS__);\
     }\
 }
 

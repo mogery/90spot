@@ -9,8 +9,8 @@
 #define DH_GENERATOR 2
 
 typedef struct {
-    mpz_t public;
-    mpz_t private;
+    mpz_t pub;
+    mpz_t priv;
 } dh_keys;
 
 void dh_init();
