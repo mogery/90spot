@@ -4,18 +4,13 @@
 #include "../hola/hola_input.hpp"
 #include "../hola/hola_button.hpp"
 #include "../hola/hola_fonts.hpp"
-#include "secrets.h"
 
 class HolaSceneAuth : public HolaStaticElement {
     public:
         int onInteract(HolaInteraction e);
         int render(SDL_Renderer* renderer);
 
-        HolaSceneAuth(HolaRect rect) : HolaStaticElement(rect)
-        {
-            username.setContent(SPOTIFY_USERNAME);
-            password.setContent(SPOTIFY_PASSWORD);
-        }
+        HolaSceneAuth(HolaRect rect) : HolaStaticElement(rect) { }
 
     protected:
         TTF_Font* font_title = hola_get_font_pile().sans_bold48;

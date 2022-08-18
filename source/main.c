@@ -17,7 +17,6 @@
 #include "protobuf-c.h"
 #include "conv.h"
 #include "log.h"
-#include "secrets.h"
 #include "spotify/apresolve.h"
 #include "spotify/handshake.h"
 #include "spotify/session.h"
