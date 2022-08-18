@@ -192,7 +192,7 @@ int spotifymgr_demo()
 {
     log_info("Sending mercury GET\n");
 
-    spotify_id track_id = spotify_id_from_b62("0GNNFgqWRqhQ8Cng9nEXpY", SAT_Track);
+    spotify_id track_id = spotify_id_from_b62("57JRZbE80MLsYbmb24cPee", SAT_Track);
     char track_id_b16[SPOTIFY_ID_B16_LENGTH + 1];
     spotify_id_to_b16(track_id_b16, track_id);
 
