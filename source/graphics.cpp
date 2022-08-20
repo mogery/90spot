@@ -100,14 +100,14 @@ int gfx_update()
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
             case SDL_JOYAXISMOTION:
-                log_info("Joystick %d axis %d value: %d\n",
-                        event.jaxis.which,
-                        event.jaxis.axis, event.jaxis.value);
+                // log_info("Joystick %d axis %d value: %d\n",
+                //         event.jaxis.which,
+                //         event.jaxis.axis, event.jaxis.value);
                 break;
 
             case SDL_JOYBUTTONDOWN:
-                log_info("Joystick %d button %d down\n",
-                        event.jbutton.which, event.jbutton.button);
+                // log_info("Joystick %d button %d down\n",
+                //         event.jbutton.which, event.jbutton.button);
                 if (event.jbutton.which == 0 && event.jbutton.button == 10) {
                     // (+) button down
                     return 1;
