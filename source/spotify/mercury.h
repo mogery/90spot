@@ -9,6 +9,7 @@ struct mercury_ctx {
 
     uint64_t next_seq;
     struct mercury_pending_message* messages;
+    struct mercury_subscription* subscriptions;
 };
 
 struct mercury_message_part {
@@ -37,13 +38,24 @@ struct mercury_pending_message {
     struct mercury_pending_message* next;
 };
 
+struct mercury_subscription {
+    char* uri;
+
+    mercury_response_handler handler;
+    void* handler_state;
+
+    struct mercury_subscription* next;
+};
+
 typedef struct mercury_ctx mercury_ctx;
-typedef struct mercury_pending_message mercury_pending_message;
 typedef struct mercury_message_part mercury_message_part;
+typedef struct mercury_pending_message mercury_pending_message;
+typedef struct mercury_subscription mercury_subscription;
 
 mercury_ctx* mercury_init(session_ctx* session);
 int mercury_get_request(mercury_ctx* ctx, char* uri, mercury_response_handler handler, void* state);
 int mercury_send_request(mercury_ctx* ctx, char* uri, uint8_t* buf, uint16_t len, mercury_response_handler handler, void* state);
+void mercury_listen_to(mercury_ctx* ctx, char* uri, mercury_response_handler handler, void* state);
 void mercury_destroy(mercury_ctx* ctx);
 
 #endif

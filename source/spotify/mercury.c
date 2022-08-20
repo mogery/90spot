@@ -17,6 +17,7 @@ mercury_ctx* mercury_init(session_ctx* session)
     res->session = session;
     res->next_seq = 0;
     res->messages = NULL;
+    res->subscriptions = NULL;
 
     session_add_message_listener(session, mercury_message_listener, res);
 
@@ -128,9 +129,9 @@ int mercury_general_request(mercury_ctx* ctx, char* uri, uint8_t method_code, ch
     mercury_pending_message* msg = malloc(sizeof(mercury_pending_message));
     msg->seq = seq;
     msg->parts = NULL;
-    msg->next = ctx->messages;
     msg->handler = handler;
     msg->handler_state = state;
+    msg->next = ctx->messages;
     ctx->messages = msg;
 
     if (session_send_message(ctx->session, 0xB2, packet, packet_len) < 0)
@@ -157,6 +158,16 @@ int mercury_send_request(mercury_ctx* ctx, char* uri, uint8_t* buf, uint16_t len
     return mercury_general_request(ctx, uri, 0xB2, "SEND", payload, handler, state);
 
     // payload is freed by general_request
+}
+
+void mercury_listen_to(mercury_ctx* ctx, char* uri, mercury_response_handler handler, void* state)
+{
+    mercury_subscription* msg = malloc(sizeof(mercury_subscription));
+    msg->uri = uri;
+    msg->handler = handler;
+    msg->handler_state = state;
+    msg->next = ctx->subscriptions;
+    ctx->subscriptions = msg;
 }
 
 #pragma endregion Requests
@@ -191,8 +202,18 @@ int mercury_message_listener(session_ctx* session, uint8_t cmd, uint8_t* buf, ui
 
     if (msg == NULL)
     {
-        log_debug("[MERCURY] Seq %ld not found in message list, ignoring.\n", seq);
-        return 0;
+        if (cmd == 0xB5) {
+            msg = malloc(sizeof(mercury_pending_message));
+            msg->seq = seq;
+            msg->parts = NULL;
+            msg->handler = NULL;
+            msg->handler_state = NULL;
+            msg->next = ctx->messages;
+            ctx->messages = msg;
+        } else {
+            log_debug("[MERCURY] Seq %ld not found in message list, ignoring.\n", seq);
+            return 0;
+        }
     }
 
     uint8_t* ptr = buf + seq_len + 5;
@@ -257,13 +278,37 @@ int mercury_message_listener(session_ctx* session, uint8_t cmd, uint8_t* buf, ui
         }
         log_debug("[MERCURY] %ld %s %d\n", seq, header->uri, header->status_code);
 
-        if (msg->handler != NULL && msg->handler(ctx, header, msg->parts, msg->handler_state) < 0)
+        if (cmd == 0xB5) {
+            // TODO: handle subscriptions (0xB5)
+            mercury_subscription* sub = ctx->subscriptions;
+            while (sub != NULL)
+            {
+                if (strlen(header->uri) == strlen(sub->uri) && strcmp(header->uri, sub->uri) == 0)
+                    break;
+                
+                sub = sub->next;
+            }
+
+            if (sub == NULL)
+            {
+                log_debug("[MERCURY] Received event for unsubscribed endpoint %s, ignoring...", header->uri);
+            }
+            else
+            {
+                if (sub->handler(ctx, header, msg->parts, msg->handler_state) < 0)
+                {
+                    log_debug("[MERCURY] Event handler failed, passing error through...\n");
+                    res = -1;
+                }
+            }
+        }
+        else if (msg->handler != NULL && msg->handler(ctx, header, msg->parts, msg->handler_state) < 0)
         {
             log_debug("[MERCURY] Message handler failed, passing error through...\n");
             res = -1;
         }
 
-        // Free unpacket header
+        // Free unpacked header
         header__free_unpacked(header, NULL);
 
 skip_handler:
@@ -311,8 +356,6 @@ skip_handler:
         if (res < 0) return res;
     }
     
-    // TODO: handle subscriptions (0xB5)
-
     return 0;
 }
 
